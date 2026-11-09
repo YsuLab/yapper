@@ -99,6 +99,13 @@ actions. Prefer screen text over the screenshot.
 ## 8. Non-goals (v1)
 Play Store, iOS, multiple users, sharing, polished UI, desktop app.
 
-## 9. Owner setup answers
-_Pending. Filled in when the owner answers the setup questions (phone model / One UI, vault location + sync,
-Samsung Reminder ↔ To Do list, repo name, Arabic/English mix, data that must never leave the phone)._
+## 9. Owner setup answers (2026-11-09, by voice)
+
+| # | Question | Answer | What it means for the build |
+|---|---|---|---|
+| 1 | Phone, One UI / Android | Galaxy **S24 Ultra**, latest or second-latest One UI (One UI 8.x / Android 16 or One UI 7 / Android 15). | Target SDK 36 fits. minSdk 29 stays (no reason to raise it yet). Test on Samsung behavior, not stock. |
+| 2 | Vault + sync | **New, empty vault.** Sync not set up yet. Owns a home lab and a VPS; prefers the **VPS for data**. | Yapper creates `Inbox/` itself. Recommended sync: Syncthing with the VPS as always-on hub (see decisions). |
+| 3 | Samsung Reminder ↔ Microsoft To Do | Probably **not** syncing yet. | M3 setup step: turn on the To Do sync in Samsung Reminder and pick the list. |
+| 4 | Repo name + visibility | Fine. (Repo is currently **public**.) | No change. Never put secrets or personal captures in the repo. |
+| 5 | Arabic vs English | Fine with either, **prefers Arabic**. | Transcripts keep his words as spoken (Arabic script for Arabic, Latin for English terms). Sorter output language: Arabic-first is allowed. UI stays English for now. |
+| 6 | Must never leave the phone | **Nothing.** Building a GPU home lab and wants **fully local AI later**. | Cloud transcribers/LLM are fine now. Keep the transcriber and LLM interfaces ready for a self-hosted provider; the M1 benchmark already includes a self-hosted (OpenAI-compatible) slot. |

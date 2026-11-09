@@ -76,9 +76,45 @@ Google Play Protect may warn about an unknown developer: tap *More details → I
 
 The repo is private, so you must be signed in to GitHub in the phone browser (or use the GitHub app).
 
-## C. Later milestones (not needed for M0)
+## C. Phone setup for capture (M1, ~5 min)
+
+1. Install the APK and open **Yapper**.
+2. Tap **1 · Allow microphone and notifications** → Allow both.
+3. Tap **2 · Set Yapper as digital assistant** → *Digital assistant app* → **Yapper**.
+   (Or: Settings → Apps → Choose default apps → Digital assistant app.)
+   In the same screen turn on **Use text from screen** and **Use screenshot** (names vary a bit by One UI).
+4. Side key: Settings → Advanced features → **Side button** → *Press and hold* → **Digital assistant**.
+5. Back in Yapper tap **3 · Choose Obsidian vault folder** → pick (or create) your vault folder →
+   *Use this folder* → *Allow*. Yapper creates `Inbox/` inside it.
+6. (Optional now, needed for transcripts) add one or more transcriber keys, then **Save**:
+   - **OpenAI**: platform.openai.com → API keys.
+   - **ElevenLabs**: elevenlabs.io → Developers → API keys (Speech to Text permission).
+   - **Groq**: console.groq.com → API keys (has a free tier).
+   - **Self-hosted** (later, GPU home lab): an OpenAI-compatible server such as Speaches, reachable over
+     HTTPS (e.g. Tailscale Serve). URL ends in `/v1`.
+   Keep **Benchmark** on during M1: each capture is transcribed by every provider you added.
+7. Battery: Settings → Apps → Yapper → Battery → **Unrestricted**, so queued work runs on time.
+
+All four status lines at the top should show ✅ (transcribers can stay empty: notes then hold audio only).
+
+## D. Vault sync (recommended, your call)
+
+**Syncthing with the VPS as the hub.** The VPS is always on, so the phone and PC never need to be online
+at the same time, and the data stays on your own server.
+
+1. VPS: install Syncthing (`apt install syncthing`, run as a user service), open the web UI over an SSH
+   tunnel or Tailscale only.
+2. Phone: install **Syncthing-Fork** (F-Droid / GitHub `researchxxl/syncthing-android`; the old official
+   app is discontinued). Share the vault folder with the VPS. Set the folder to *Send & Receive*.
+3. PC/laptop/tablet: install Syncthing, accept the same folder from the VPS, open it in Obsidian.
+4. Turn on *File versioning → Staggered* on the VPS side as a safety net.
+
+Obsidian Sync (paid) also works with Yapper. Plugin-based sync (Remotely Save, LiveSync) only sees
+Yapper's files when Obsidian is open, so Syncthing is the better fit.
+
+## E. Later milestones
 - **Claude API key** (M2): claude.ai → Settings → Billing → API credits → Link organization. In Console, create
   workspace `yapper` with a spend limit, then an API key in it. You'll paste it into the app, never the repo.
-- **Microsoft Entra app** (M3): Claude will give exact, current steps then.
-- **Phone settings** (M1): default digital assistant = Yapper, enable screen text + screenshot,
-  side key → Press and hold → Digital assistant, grant microphone/notifications/exact alarms/vault folder.
+- **Microsoft Entra app + To Do sync** (M3): turn on Microsoft To Do sync in Samsung Reminder. Claude will
+  give exact Entra steps then.
+- **Exact alarms** (M3): allow when the app asks.

@@ -35,6 +35,13 @@ public final class CaptureMeta {
     public long createdAtMs;
     public String zoneId = "Asia/Riyadh";
     public String audioFile = "";
+    /**
+     * M4 ramble: audio split into parts (audio-01.ogg, audio-02.ogg …), in order. Empty for a quick
+     * capture, which has only {@link #audioFile}. Use {@link #parts()}.
+     */
+    public final List<String> audioParts = new ArrayList<>();
+    /** "" (quick capture), "ramble", "plan" (morning plan) or "debrief" (evening). */
+    public String mode = "";
     public long durationMs;
     public long speechMs;
     public String stopReason = "";
@@ -61,6 +68,8 @@ public final class CaptureMeta {
         p.setProperty("createdAtMs", Long.toString(createdAtMs));
         p.setProperty("zoneId", nz(zoneId));
         p.setProperty("audioFile", nz(audioFile));
+        p.setProperty("audioParts", String.join(",", audioParts));
+        p.setProperty("mode", nz(mode));
         p.setProperty("durationMs", Long.toString(durationMs));
         p.setProperty("speechMs", Long.toString(speechMs));
         p.setProperty("stopReason", nz(stopReason));
@@ -96,6 +105,11 @@ public final class CaptureMeta {
         m.createdAtMs = parseLong(p.getProperty("createdAtMs"));
         m.zoneId = p.getProperty("zoneId", "Asia/Riyadh");
         m.audioFile = p.getProperty("audioFile", "");
+        String parts = p.getProperty("audioParts", "");
+        if (!parts.isEmpty()) {
+            m.audioParts.addAll(Arrays.asList(parts.split(",")));
+        }
+        m.mode = p.getProperty("mode", "");
         m.durationMs = parseLong(p.getProperty("durationMs"));
         m.speechMs = parseLong(p.getProperty("speechMs"));
         m.stopReason = p.getProperty("stopReason", "");
@@ -111,6 +125,18 @@ public final class CaptureMeta {
             m.transcribedBy.addAll(Arrays.asList(by.split(",")));
         }
         return m;
+    }
+
+    /** Audio files of this capture, in order: the ramble parts, or the single quick-capture file. */
+    public List<String> parts() {
+        if (!audioParts.isEmpty()) {
+            return new ArrayList<>(audioParts);
+        }
+        List<String> one = new ArrayList<>();
+        if (audioFile != null && !audioFile.isEmpty()) {
+            one.add(audioFile);
+        }
+        return one;
     }
 
     /** Transcriber ids from {@code configured} that still have to run for this capture. */

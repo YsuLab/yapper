@@ -15,4 +15,6 @@ public final class SorterInput {
     public String index = "";
     public String dailyPath = "";
     public String daily = "";
+    /** "" (quick capture), "ramble", "plan" or "debrief" (M4/M5). */
+    public String mode = "";
 }

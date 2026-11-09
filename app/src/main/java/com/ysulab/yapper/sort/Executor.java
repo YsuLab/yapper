@@ -67,6 +67,12 @@ public final class Executor {
                 case SortAction.ASK:
                     ask(log, a, marker);
                     break;
+                case SortAction.PLAN:
+                    plan(log, a, marker);
+                    break;
+                case SortAction.CHECK:
+                    check(log, a, marker);
+                    break;
                 default:
                     break;
             }
@@ -102,7 +108,107 @@ public final class Executor {
         if (e != null) {
             e.title = a.title;
             e.remindAt = a.remindAt;
+            e.notes = a.markdown.trim();
         }
+    }
+
+    static final String PLAN_SECTION = "Plan";
+    static final String DEBRIEF_SECTION = "Debrief";
+
+    /** "- [ ] 09:00–10:30 Title" lines under "## Plan", then one reminder (no extra line) per block start. */
+    private void plan(ActionLog log, SortAction a, String marker) throws IOException {
+        StringBuilder md = new StringBuilder();
+        for (SortAction.Block b : a.blocks) {
+            md.append("- [ ] ");
+            if (!b.start.isEmpty()) {
+                md.append(b.start).append(b.end.isEmpty() ? "" : "–" + b.end).append(' ');
+            }
+            md.append(b.title).append('\n');
+        }
+        if (!a.markdown.isEmpty()) {
+            md.append('\n').append(a.markdown.trim()).append('\n');
+        }
+        write(log, a.tool, dailyPath(a.date), PLAN_SECTION, md.toString(), marker, false, a.date);
+        java.time.LocalDate day = java.time.LocalDate.parse(a.date);
+        for (int i = 0; i < a.blocks.size(); i++) {
+            SortAction.Block b = a.blocks.get(i);
+            if (!b.alarm || b.start.isEmpty()) {
+                continue;
+            }
+            String ref = marker + "#" + i;
+            if (hasRef(log, ref)) {
+                continue; // logged by an interrupted run
+            }
+            ZonedDateTime at = day.atTime(java.time.LocalTime.parse(b.start)).atZone(now.getZone());
+            ActionLog.Entry e = log.add("reminder", dailyPath(a.date), ref, a.tool);
+            e.title = b.title + (b.end.isEmpty() ? "" : " (until " + b.end + ")");
+            e.remindAt = at.toOffsetDateTime().toString();
+        }
+    }
+
+    /**
+     * Debrief: ticks the first open task in that day's note that matches, changing only "[ ]" to "[x]".
+     * No match → a "- [x]" line under "## Debrief", so nothing the owner said is lost.
+     */
+    private void check(ActionLog log, SortAction a, String marker) throws IOException {
+        if (hasRef(log, marker)) {
+            return;
+        }
+        String date = a.date.isEmpty() ? now.format(DAY) : a.date;
+        String path = dailyPath(date);
+        String current = fs.read(path);
+        if (current != null && current.contains(marker)) {
+            return; // fallback line already written
+        }
+        String line = current == null ? null : findOpenTask(current, a.title);
+        if (line == null) {
+            write(log, a.tool, path, DEBRIEF_SECTION, "- [x] " + a.title, marker, false, date);
+            return;
+        }
+        String ticked = line.replaceFirst("- \\[ \\]", "- [x]");
+        int at = current.indexOf(line);
+        fs.replace(path, current.substring(0, at) + ticked + current.substring(at + line.length()));
+        ActionLog.Entry e = log.add("check", path, line, a.tool);
+        e.newText = ticked;
+        e.notes = marker;
+    }
+
+    private static boolean hasRef(ActionLog log, String ref) {
+        for (ActionLog.Entry e : log.entries) {
+            if (ref.equals(e.text) && "reminder".equals(e.kind) || ref.equals(e.notes) && "check".equals(e.kind)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The first whole line "- [ ] …" whose text matches {@code task} (either contains the other). */
+    static String findOpenTask(String text, String task) {
+        String want = normTask(task);
+        if (want.length() < 3) {
+            return null;
+        }
+        for (String line : text.split("\n")) {
+            String t = line.trim();
+            if (!t.startsWith("- [ ] ")) {
+                continue;
+            }
+            String have = normTask(t.substring(6));
+            if (have.length() >= 3 && (have.contains(want) || want.contains(have))) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    /** Lower case, no times ("09:00–10:30", "⏰ 17:00"), no punctuation, single spaces. */
+    static String normTask(String s) {
+        return s.toLowerCase(Locale.ROOT)
+                .replaceAll("⏰", " ")
+                .replaceAll("\\d{1,2}:\\d{2}\\s*([–-]\\s*\\d{1,2}:\\d{2})?", " ")
+                .replaceAll("[\\p{Punct}\\p{IsPunctuation}]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     private void ask(ActionLog log, SortAction a, String marker) throws IOException {
@@ -192,7 +298,23 @@ public final class Executor {
             if (e.undone) {
                 continue;
             }
+            if ("reminder".equals(e.kind)) {
+                e.undone = true; // the To Do task / alarm is removed by ReminderSync
+                r.removed++;
+                continue;
+            }
             String current = fs.read(e.path);
+            if ("check".equals(e.kind)) {
+                int at = current == null ? -1 : current.lastIndexOf(e.newText);
+                if (at < 0) {
+                    r.kept++;
+                } else {
+                    fs.replace(e.path, current.substring(0, at) + e.text + current.substring(at + e.newText.length()));
+                    e.undone = true;
+                    r.removed++;
+                }
+                continue;
+            }
             if (current == null) {
                 e.undone = true; // already gone
                 r.removed++;

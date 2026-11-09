@@ -60,4 +60,64 @@
     <string name="st_none">none yet (notes get audio only)</string>
     <string name="st_captures">Captures: %1$d in Inbox · %2$d waiting to be saved · %3$d waiting for transcripts</string>
     <string name="st_sorted">Sorted: %1$d · preview only: %2$d · failed: %3$d · undone: %4$d</string>
+    <!-- M3 reminders -->
+    <string name="channel_alarm">Reminder alarms</string>
+    <string name="alarm_default_title">Reminder</string>
+    <string name="alarm_text">Yapper reminder</string>
+    <string name="alarm_snooze">Snooze 10 min</string>
+    <string name="alarm_done">Done</string>
+    <string name="ms_need_client_id">Paste the Application (client) ID first, then tap Sign in.</string>
+    <string name="ms_no_browser">No browser found to sign in.</string>
+    <string name="ms_sign_in_failed">Microsoft sign-in failed: %1$s</string>
+    <string name="ms_lists_failed">Could not load your To Do lists: %1$s</string>
+    <string name="ms_no_lists">No To Do lists found. Turn on To Do sync in Samsung Reminder first.</string>
+    <string name="ms_pick_list">Which list does Samsung Reminder sync?</string>
+    <string name="ms_connected">Reminders go to “%1$s”</string>
+    <string name="ms_sign_in_again">Microsoft sign-in expired. %1$d reminder(s) will ring on the phone instead. Open Yapper → Sign in to Microsoft.</string>
+    <string name="ms_todo_failed">To Do refused the reminders (%2$s). %1$d will ring on the phone instead. Check the list in Yapper.</string>
+    <string name="section_reminders">Reminders (Samsung Reminder via Microsoft To Do)</string>
+    <string name="reminders_help">Reminders go to the To Do list that Samsung Reminder syncs. Anything due within the alarm window rings as a phone alarm instead (on the minute, no double alert). Without To Do, every reminder rings as a phone alarm.</string>
+    <string name="hint_ms_client_id">Application (client) ID from Microsoft Entra</string>
+    <string name="btn_ms_sign_in">Sign in to Microsoft</string>
+    <string name="btn_ms_list">Choose To Do list</string>
+    <string name="btn_ms_test">Test sync (reminder in 3 minutes)</string>
+    <string name="btn_ms_sign_out">Sign out of Microsoft</string>
+    <string name="hint_alarm_window">Alarm window in minutes (default 60)</string>
+    <string name="ms_test_sent">Sent “Yapper sync test” for %1$s. Note when Samsung Reminder shows it and rings.</string>
+    <string name="ms_test_failed">Test failed: %1$s</string>
+    <string name="st_todo">Reminders → To Do</string>
+    <string name="st_todo_off">phone alarms only (not signed in)</string>
+    <string name="st_exact">Exact alarms allowed</string>
+
+    <!-- M4 ramble -->
+    <string name="section_talk">Talk</string>
+    <string name="talk_help">Ramble records with the screen off for up to an hour. Stop it from the notification. Also on the Quick Settings tile and by long-pressing the Yapper icon.</string>
+    <string name="btn_ramble">🎙 Ramble</string>
+    <string name="btn_plan">☀️ Plan my day</string>
+    <string name="btn_debrief">🌙 Evening debrief</string>
+    <string name="btn_stop_ramble">⏹ Stop and save</string>
+    <string name="channel_ramble">Ramble recording</string>
+    <string name="ramble_title">Rambling…</string>
+    <string name="ramble_title_plan">Planning your day…</string>
+    <string name="ramble_title_debrief">Evening debrief…</string>
+    <string name="ramble_text">Talk as long as you like. Tap Stop when done.</string>
+    <string name="ramble_stop">Stop and save</string>
+    <string name="ramble_started">Recording. Lock the phone if you like.</string>
+    <string name="ramble_saved">Got it ✓</string>
+    <string name="tile_ramble">Ramble</string>
+    <string name="shortcut_ramble">Ramble</string>
+    <string name="shortcut_plan">Plan my day</string>
+    <string name="shortcut_debrief">Debrief</string>
+
+    <!-- M5 today -->
+    <string name="section_today">Daily nudges</string>
+    <string name="today_help">A notification each morning and evening. One tap and you talk: the plan becomes time blocks with alarms; the debrief ticks off what you did and rolls the rest to tomorrow. Leave a time empty to turn that nudge off.</string>
+    <string name="hint_nudge_morning">Morning plan nudge, HH:mm (default 08:00)</string>
+    <string name="hint_nudge_evening">Evening debrief nudge, HH:mm (default 21:30)</string>
+    <string name="channel_nudge">Daily plan and debrief</string>
+    <string name="nudge_plan_title">Plan your day?</string>
+    <string name="nudge_plan_text">Tap and say what today looks like.</string>
+    <string name="nudge_debrief_title">Evening debrief?</string>
+    <string name="nudge_debrief_text">Tap and say what you finished and what moves to tomorrow.</string>
+    <string name="nudge_talk">Talk now</string>
 </resources>

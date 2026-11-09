@@ -23,6 +23,8 @@ public final class Summary {
         int reminders = 0;
         int daily = 0;
         int questions = 0;
+        int blocks = 0;
+        int done = 0;
         for (SortAction a : plan) {
             switch (a.tool) {
                 case SortAction.APPEND:
@@ -38,11 +40,23 @@ public final class Summary {
                 case SortAction.ASK:
                     questions++;
                     break;
+                case SortAction.PLAN:
+                    blocks += a.blocks.size();
+                    break;
+                case SortAction.CHECK:
+                    done++;
+                    break;
                 default:
                     break;
             }
         }
         List<String> parts = new ArrayList<>();
+        if (blocks > 0) {
+            parts.add("Plan: " + plural(blocks, "block"));
+        }
+        if (done > 0) {
+            parts.add(done + " done ✓");
+        }
         if (!notes.isEmpty()) {
             parts.add(plural(notes.size(), "note") + " → " + String.join(", ", notes));
         }
@@ -66,7 +80,7 @@ public final class Summary {
                 return a.path;
             }
             if (fallback == null) {
-                if (SortAction.DAILY.equals(a.tool)) {
+                if (SortAction.DAILY.equals(a.tool) || SortAction.PLAN.equals(a.tool)) {
                     fallback = Executor.dailyPath(a.date);
                 } else if (SortAction.ASK.equals(a.tool)) {
                     fallback = Executor.INBOX_NOTE;
@@ -145,6 +159,16 @@ public final class Summary {
             }
             case SortAction.ASK:
                 return "Question in " + link(Executor.INBOX_NOTE) + ": " + a.question;
+            case SortAction.PLAN: {
+                StringBuilder sb = new StringBuilder("Plan in ").append(link(Executor.dailyPath(a.date))).append(": ");
+                for (int i = 0; i < a.blocks.size(); i++) {
+                    SortAction.Block b = a.blocks.get(i);
+                    sb.append(i == 0 ? "" : ", ").append(b.start.isEmpty() ? "" : b.start + " ").append(b.title);
+                }
+                return sb.toString();
+            }
+            case SortAction.CHECK:
+                return "Done ✓ " + a.title;
             default:
                 return a.tool;
         }

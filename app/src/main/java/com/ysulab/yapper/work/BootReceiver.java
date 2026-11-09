@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-/** After a reboot, pick up any capture that was interrupted mid-recording. */
+/** After a reboot or update: resume interrupted captures, set alarms and daily nudges again. */
 public final class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -14,6 +14,7 @@ public final class BootReceiver extends BroadcastReceiver {
             new Thread(() -> {
                 try {
                     CaptureScheduler.reconcile(context.getApplicationContext());
+                    com.ysulab.yapper.today.Nudges.scheduleAll(context.getApplicationContext());
                 } finally {
                     pr.finish();
                 }

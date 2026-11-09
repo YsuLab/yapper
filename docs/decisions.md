@@ -2,6 +2,38 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-09 — M3–M5 (one release)
+- **M3, M4 and M5 ship as one PR and one APK.** Owner asked for a single build to test instead of one per
+  milestone (reinstalls are tiring). Overrides "one milestone = one PR" for these three.
+- **No MSAL.** OAuth 2.0 authorization code + PKCE against `login.microsoftonline.com/consumers`, redirect
+  `yapper://auth`, scopes `Tasks.ReadWrite offline_access`. Three HTTP calls; avoids a large dependency and the
+  MSAL redirect URI that embeds the signing-key hash (which would change while the owner still has debug builds).
+  Refresh token in the Keystore-backed `SecretStore`.
+- **Graph times in UTC.** `reminderDateTime`/`dueDateTime` sent with `timeZone: "UTC"`; To Do and Samsung Reminder
+  show them in the phone's zone. Avoids Windows-vs-IANA zone name issues.
+- **Reminder routing (exact-minute safety net).** Due within the alarm window (default 60 min, setting) → local
+  `AlarmManager.setAlarmClock` alarm rings, and the To Do task is created with `isReminderOn: false` so Samsung
+  Reminder does not ring a second time. Later → To Do reminder only. Push delayed until inside the window
+  (offline) → switches to the local alarm. Not signed in / token revoked / list gone → every waiting reminder rings
+  locally. Past times → To Do task without reminder. The window is a setting so the owner can widen it if the
+  sync test shows Samsung Reminder is late.
+- **`USE_EXACT_ALARM`** (granted at install, Android 13+) instead of asking for "Alarms & reminders". Sideloaded
+  app, so the Play policy limit on that permission does not apply. Alarms are restored on boot and app update.
+- **Ramble = microphone foreground service, ~5-min Ogg/Opus parts cut at a pause** (hard cut at 7 min). Each part is
+  added to the bundle when finalized, so a crash loses at most the current part, and each part stays far below
+  transcription upload limits. Transcribed per part with resume; a part that fails for good leaves a visible gap
+  marker instead of failing the whole ramble. Partial wake lock for the recording only (max 65 min).
+- **Ramble starts from an activity** (app button, Quick Settings tile, launcher shortcuts, nudge notification):
+  Android 14+ only lets a visible app start microphone recording.
+- **Day plan = `plan_day` tool:** `## Plan` with `- [ ] HH:mm–HH:mm title` lines in the daily note, and an alarm
+  (same routing as reminders, no extra `⏰` line) at each block start unless `alarm: false`.
+- **Debrief ticks checkboxes.** `complete_task` changes only `- [ ]` → `- [x]` on the first matching open task in
+  that day's daily note; logged with the exact before/after line, so Undo reverts it. This is the one exception
+  to "append only", because the milestone asks for done items to be checked. No match → `- [x]` line under
+  `## Debrief`, so nothing is lost. Unfinished items roll over to tomorrow via `add_to_daily` ("Rolled over").
+- **Daily nudges** at 08:00 and 21:30 (settings, empty = off), inexact alarms. One tap starts a plan or debrief
+  ramble. The owner forgets lists that need him to look, so the app comes to him.
+
 ## 2026-11-09 — M2 (Sorter)
 - **Shadow mode is a toggle, default off.** The brief planned ~3 days of proposals first. The owner wants real
   filing now, and every write is append-only, tagged and undoable, so the safety comes from Undo instead. The

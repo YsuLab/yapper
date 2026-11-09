@@ -57,10 +57,13 @@ public final class InboxWorker extends Worker {
             DocumentFile inbox = vault.dir(InboxNote.INBOX_DIR);
             DocumentFile attachments = vault.dir(InboxNote.INBOX_DIR, InboxNote.ATTACHMENTS_DIR);
 
-            File audio = m.audioFile.isEmpty() ? null : store.file(id, m.audioFile);
-            boolean hasAudio = audio != null && audio.isFile() && audio.length() > 0;
-            if (hasAudio) {
-                vault.copyIn(attachments, InboxNote.audioName(m), audio);
+            boolean hasAudio = false;
+            for (String part : m.parts()) {
+                File audio = store.file(id, part);
+                if (audio.isFile() && audio.length() > 0) {
+                    vault.copyIn(attachments, InboxNote.audioName(m, part), audio);
+                    hasAudio = true;
+                }
             }
             File shot = store.file(id, CaptureStore.SCREENSHOT);
             boolean hasShot = "saved".equals(m.screenshot) && shot.isFile();

@@ -273,7 +273,7 @@ public final class RambleService extends Service {
             case "debrief": title = R.string.ramble_title_debrief; break;
             default: title = R.string.ramble_title; break;
         }
-        return new Notification.Builder(this, CHANNEL)
+        Notification.Builder b = new Notification.Builder(this, CHANNEL)
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                 .setContentTitle(getString(title))
                 .setContentText(getString(R.string.ramble_text))
@@ -281,9 +281,11 @@ public final class RambleService extends Service {
                 .setWhen(System.currentTimeMillis())
                 .setOngoing(true)
                 .setContentIntent(open)
-                .addAction(new Notification.Action.Builder(null, getString(R.string.ramble_stop), stop).build())
-                .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .build();
+                .addAction(new Notification.Action.Builder(null, getString(R.string.ramble_stop), stop).build());
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        }
+        return b.build();
     }
 
     private void buzz() {

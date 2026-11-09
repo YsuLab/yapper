@@ -57,5 +57,10 @@ android {
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
+    implementation("androidx.documentfile:documentfile:1.1.0")
+    implementation("androidx.annotation:annotation:1.9.1")
     testImplementation("junit:junit:4.13.2")
+    // Real org.json for unit tests (android.jar only has stubs).
+    testImplementation("org.json:json:20240303")
 }

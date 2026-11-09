@@ -2,4 +2,49 @@
 <resources>
     <string name="app_name">Yapper</string>
     <string name="tagline">One button. Talk. Everything lands in the right place.</string>
+
+    <!-- Capture overlay -->
+    <string name="capture_listening">Listening…</string>
+    <string name="capture_hint">Talk. I stop after a short pause, or tap anywhere.</string>
+    <string name="capture_got_it">Got it ✓</string>
+    <string name="capture_no_mic">Saved the screen only</string>
+    <string name="capture_no_mic_hint">Open Yapper and allow the microphone.</string>
+    <string name="capture_mic_busy_hint">The microphone is busy (call or another recorder).</string>
+    <string name="capture_failed">Couldn\'t save</string>
+    <string name="capture_failed_hint">Phone storage error. Nothing was recorded.</string>
+
+    <!-- Notifications -->
+    <string name="channel_status">Capture status</string>
+    <string name="channel_work">Background processing</string>
+    <string name="working_title">Saving capture…</string>
+    <string name="needs_setup_title">Yapper needs setup</string>
+    <string name="needs_vault">Choose your Obsidian vault folder. Captures are safe on the phone until then.</string>
+    <string name="saved_title">Saved to Inbox</string>
+    <string name="transcribed_title">Transcript added</string>
+
+    <!-- Setup screen -->
+    <string name="btn_permissions">1 · Allow microphone and notifications</string>
+    <string name="btn_assistant">2 · Set Yapper as digital assistant</string>
+    <string name="btn_vault">3 · Choose Obsidian vault folder</string>
+    <string name="section_capture">Capture</string>
+    <string name="hint_silence">Seconds of silence that end a capture (default 2.0)</string>
+    <string name="section_transcribers">Transcribers</string>
+    <string name="transcribers_help">Add a key to enable a provider. Keys are encrypted with the Android Keystore. Leave a key field empty to keep the saved key; type - to delete it. Self-hosted needs an https URL ending in /v1.</string>
+    <string name="compare_all">Benchmark: run every configured transcriber on every capture</string>
+    <string name="hint_key">API key</string>
+    <string name="hint_key_saved">API key (saved, leave empty to keep)</string>
+    <string name="hint_model">Model</string>
+    <string name="hint_url">Base URL, e.g. https://gpu.tailnet.ts.net/v1</string>
+    <string name="hint_language">Language code (empty = auto-detect)</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_retry">Retry unfinished captures</string>
+    <string name="saved">Saved</string>
+    <string name="retry_queued">Queued</string>
+    <string name="st_assistant">Yapper is the digital assistant</string>
+    <string name="st_mic">Microphone allowed</string>
+    <string name="st_notifications">Notifications allowed</string>
+    <string name="st_vault">Vault folder</string>
+    <string name="st_transcribers">Transcribers</string>
+    <string name="st_none">none yet (notes get audio only)</string>
+    <string name="st_captures">Captures: %1$d in Inbox · %2$d waiting to be saved · %3$d waiting for transcripts</string>
 </resources>

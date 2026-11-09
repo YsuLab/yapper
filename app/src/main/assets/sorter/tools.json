@@ -1,0 +1,80 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "append_to_note",
+      "description": "Append markdown to an existing note (or a note the rules name). Preferred over create_note.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Vault-relative path, e.g. Uni/Algorithms.md"},
+          "heading": {"type": "string", "description": "Optional short topic shown next to the date heading"},
+          "markdown": {"type": "string", "description": "The content to add, without a heading"}
+        },
+        "required": ["path", "markdown"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_note",
+      "description": "Create a new note. Only when no existing note fits.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "Vault-relative path ending in .md"},
+          "markdown": {"type": "string", "description": "Full content of the new note, may start with a # title"}
+        },
+        "required": ["path", "markdown"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "add_to_daily",
+      "description": "Add to a daily note (plan, debrief, log).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "date": {"type": "string", "description": "YYYY-MM-DD"},
+          "section": {"type": "string", "description": "e.g. Plan, Log, Debrief"},
+          "markdown": {"type": "string"}
+        },
+        "required": ["date", "section", "markdown"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_reminder",
+      "description": "One reminder at one time. For 'remind me 5 and 15 minutes before', call it twice.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "remind_at": {"type": "string", "description": "ISO 8601 with offset, e.g. 2026-11-10T17:00:00+03:00"},
+          "notes": {"type": "string"}
+        },
+        "required": ["title", "remind_at"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "ask_owner",
+      "description": "Low confidence: ask the owner one short question instead of guessing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {"type": "string"},
+          "options": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["question"]
+      }
+    }
+  }
+]

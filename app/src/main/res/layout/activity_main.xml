@@ -91,6 +91,62 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/section_sorter"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sorter_help"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/sorter_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_sorter_url"
+            android:inputType="textUri"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/sorter_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_sorter_model"
+            android:inputType="textUri"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/sorter_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_key"
+            android:inputType="textPassword"
+            android:singleLine="true" />
+
+        <CheckBox
+            android:id="@+id/sorter_shadow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sorter_shadow" />
+
+        <CheckBox
+            android:id="@+id/sorter_move"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sorter_move" />
+
+        <CheckBox
+            android:id="@+id/sorter_screens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sorter_screens" />
+
         <Button
             android:id="@+id/btn_save"
             android:layout_width="match_parent"

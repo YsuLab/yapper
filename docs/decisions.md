@@ -2,6 +2,62 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-09 — M2 (Sorter)
+- **Shadow mode is a toggle, default off.** The brief planned ~3 days of proposals first. The owner wants real
+  filing now, and every write is append-only, tagged and undoable, so the safety comes from Undo instead. The
+  toggle stays for testing a new model or new rules: proposals go into the capture note, nothing else changes.
+- **One model call per capture, tool calls only.** The tools have no results the model needs, so there is no
+  agent loop: faster, cheaper, and easier to replay. A text-only answer becomes a question.
+- **`tool_choice: "auto"`, not "required".** Phone test: Claude via OpenRouter returned HTTP 400 ("tool_choice
+  type any … not supported" with thinking on). The prompt still demands tool calls only; a text answer becomes an
+  ask_owner question, so nothing is lost.
+- **Every tool call is validated before it touches the vault.** `SafePath` rejects `..`, hidden folders and
+  `_yapper/`, fixes wikilink-style paths and adds `.md`; reminders need an ISO time with offset. Invalid calls are
+  dropped and listed in the capture note.
+- **Plan first, then write; log every write.** `plan.json` is saved before any write, so a retry re-uses the same
+  plan instead of asking the model again. Each block has `%%yap:<capture id>/<n>%%`, and the executor re-reads the
+  file before writing, so a retry skips blocks already there. `actions.json` keeps the exact text for Undo.
+- **Append at the end of the note, never insert in the middle.** Inserting under an existing heading means
+  rewriting the file, which can lose a sync change. Blocks go at the end under `### YYYY-MM-DD · topic`; the
+  heading is skipped when it is already the note's last heading, so one day's captures group together.
+- **Undo removes exactly the logged text.** A note we created is deleted only if it is unchanged. If the owner
+  edited a block, Undo keeps it and says so.
+- **Reminders in M2 = lines in that day's daily note** (`## Reminders`, `- [ ] ⏰ 17:00 …`). The action log keeps
+  title + time, so M3 can push them to Microsoft To Do without asking the model again.
+- **Questions (`ask_owner`) go to `Inbox.md`** as tasks with a link back to the capture, per the rules note.
+  Actionable notification replies come later.
+- **Sorted capture notes move to `_yapper/captures/`** (setting, default on): the owner wanted ideas filed, not
+  transcripts in his Inbox. The note keeps the audio, screenshot, transcripts and a "Sorted" list of links. Obsidian
+  resolves `![[file]]` by name, so embeds keep working. Undo moves it back to `Inbox/`.
+- **Index = one line per note** (path, title, aliases, up to 8 `##`/`###` headings), rebuilt before each sort.
+  Only changed files are re-read (cache keyed by size + modified time), first 16 KB each. Skips `.*`, `_yapper/`,
+  `Inbox/`.
+- **Screenshot only when screen text is under 80 characters**, downscaled to ~720 px wide, JPEG q75.
+- **Prompt, tools and starter rules are assets** (`app/src/main/assets/sorter/`). The eval runner reads the same
+  files, so `run_eval.py` measures exactly what the phone sends.
+- **Default model `anthropic/claude-sonnet-5.5` on OpenRouter** with `cache_control` on the system part (rules +
+  index) for Anthropic models only. Empty sorter key + OpenRouter URL reuses the OpenRouter transcriber key.
+- **Only captures transcribed by an M2 build are sorted** (the transcript is now saved in the bundle). Older test
+  captures stay in Inbox.
+
+## 2026-11-09 — Models: API vs self-hosted
+- **Any model, not only Claude.** Transcriber model IDs and base URLs are already settings (M1). The M2 sorter
+  is built on the OpenAI-compatible chat API (tools + image input), not the Anthropic Messages API. OpenRouter
+  speaks it for Claude, GPT, Gemini, Qwen, etc., and vLLM / llama.cpp / Ollama speak it locally. So switching
+  model or moving to the home lab is a settings change, not code. Claude (Sonnet) is the starting baseline
+  because it is strong at following written rules and tool calls; the M2 eval set decides what else is good enough.
+- **Self-host transcription first.** Open-weight Arabic ASR caught up in 2026. Candidates for the self-hosted slot:
+  `IFM/Jais-ASR` (6B, Apache 2.0, ~12 GB BF16, AWQ/FP8 builds; Saudi dialect code, `code_switch` keeps English in
+  Latin script; vLLM plugin exposes `/v1/audio/transcriptions`) and Cohere Transcribe Arabic (open weights, Apache 2.0,
+  based on the 2B Cohere Transcribe). Vendor-reported avg WER on the Open Universal Arabic ASR sets: Jais-ASR 22.85,
+  ElevenLabs Scribe v2 24.54, Cohere Transcribe Arabic 25.87, Whisper large-v3 36.86. On SADA (Saudi) Jais-ASR is
+  30.85. Vendor numbers: the M1 benchmark (`score.py`) on the owner's own clips decides.
+- **Self-host the sorter only if it passes the eval.** 24 GB fits one ~30B model at 4-bit with vision + tools,
+  e.g. Qwen3.6-35B-A3B (Q4_K_M ≈ 22 GB, Apache 2.0), Qwen3.8-27B, Gemma 4 26B-A4B / 31B. Context left is ~35–55K
+  tokens, and STT + LLM do not both fit on 24 GB; a second 8–12 GB card holds the STT model. Run the M2 eval set
+  against the local model; switch when it reaches the same ≥ 90 % bar. Until then: local STT + API sorter.
+- **Fallback order** (later): self-hosted first, API when the home lab is unreachable, so a capture is never stuck.
+
 ## 2026-11-09 — M1 (Capture)
 - **OpenRouter slot: one key covers transcription (and can cover the M2 sorter).** Owner uses OpenRouter
   for almost everything. OpenRouter has `POST /api/v1/audio/transcriptions` (multipart, JSON response,

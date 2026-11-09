@@ -65,6 +65,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- "Undo" on a sorter result notification -->
+        <receiver
+            android:name=".work.UndoReceiver"
+            android:exported="false" />
+
         <!-- WorkManager runs expedited work as a foreground service only on Android 10–11. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"

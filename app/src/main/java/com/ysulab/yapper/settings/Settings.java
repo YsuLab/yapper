@@ -3,6 +3,7 @@ package com.ysulab.yapper.settings;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import com.ysulab.yapper.sort.SorterConfig;
 import com.ysulab.yapper.transcribe.TranscriberConfig;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,5 +98,42 @@ public final class Settings {
     /** The concrete transcribers to run on each capture. */
     public List<com.ysulab.yapper.transcribe.Transcriber> transcribers() {
         return TranscriberConfig.transcribers(allTranscribers(), compareAll());
+    }
+
+    /**
+     * Sorter (M2) settings. With no sorter key and the default OpenRouter URL, the OpenRouter
+     * transcriber key is used, so one OpenRouter key covers both.
+     */
+    public SorterConfig sorter() {
+        SorterConfig c = new SorterConfig();
+        c.baseUrl = prefs.getString("sorter_url", c.baseUrl);
+        c.model = prefs.getString("sorter_model", c.model);
+        c.shadow = prefs.getBoolean("sorter_shadow", false);
+        c.moveSorted = prefs.getBoolean("sorter_move", true);
+        c.screenshots = prefs.getBoolean("sorter_screens", true);
+        c.apiKey = secrets.get("sorter_key");
+        if (c.apiKey.isEmpty() && c.url().startsWith(SorterConfig.DEFAULT_URL)) {
+            c.apiKey = secrets.get("tx_" + TranscriberConfig.OPENROUTER + "_key");
+        }
+        return c;
+    }
+
+    /** True when the sorter has its own key (not borrowed from the OpenRouter transcriber). */
+    public boolean hasOwnSorterKey() {
+        return !secrets.get("sorter_key").isEmpty();
+    }
+
+    /** Saves sorter settings. A null key leaves the stored key unchanged; "" clears it. */
+    public void saveSorter(SorterConfig c, String newKeyOrNull) {
+        prefs.edit()
+                .putString("sorter_url", c.baseUrl)
+                .putString("sorter_model", c.model)
+                .putBoolean("sorter_shadow", c.shadow)
+                .putBoolean("sorter_move", c.moveSorted)
+                .putBoolean("sorter_screens", c.screenshots)
+                .apply();
+        if (newKeyOrNull != null) {
+            secrets.put("sorter_key", newKeyOrNull.trim());
+        }
     }
 }

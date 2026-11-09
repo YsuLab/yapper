@@ -46,6 +46,13 @@ public final class CaptureMeta {
     public String inboxPath = "";
     /** Transcriber ids that already appended a transcript (or a final failure) to the note. */
     public final Set<String> transcribedBy = new LinkedHashSet<>();
+    /**
+     * Sorter (M2) outcome: "" (not yet), "planned" (plan saved, writing), "done", "shadow"
+     * (proposal only), "failed", "undone", or "skipped" (nothing to sort, e.g. an M1 capture).
+     */
+    public String sorted = "";
+    /** One-line result for notifications, e.g. "1 note → Tabby/Learning.md · 2 reminders". */
+    public String sortSummary = "";
 
     public String serialize() {
         Properties p = new Properties();
@@ -63,6 +70,8 @@ public final class CaptureMeta {
         p.setProperty("webUri", nz(webUri));
         p.setProperty("inboxPath", nz(inboxPath));
         p.setProperty("transcribedBy", String.join(",", transcribedBy));
+        p.setProperty("sorted", nz(sorted));
+        p.setProperty("sortSummary", nz(sortSummary));
         StringWriter w = new StringWriter();
         try {
             p.store(w, "yapper capture");
@@ -95,6 +104,8 @@ public final class CaptureMeta {
         m.sourceApp = p.getProperty("sourceApp", "");
         m.webUri = p.getProperty("webUri", "");
         m.inboxPath = p.getProperty("inboxPath", "");
+        m.sorted = p.getProperty("sorted", "");
+        m.sortSummary = p.getProperty("sortSummary", "");
         String by = p.getProperty("transcribedBy", "");
         if (!by.isEmpty()) {
             m.transcribedBy.addAll(Arrays.asList(by.split(",")));

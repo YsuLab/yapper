@@ -37,6 +37,9 @@ jobs:
       - name: Benchmark scorer tests
         run: python3 -m unittest discover -s tools/transcribe-bench -v
 
+      - name: Sorter eval scorer tests
+        run: python3 -m unittest discover -s tools/sorter-eval -v
+
       - name: Decode signing key
         if: env.HAS_KEYSTORE == 'true'
         env:

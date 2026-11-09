@@ -96,6 +96,20 @@ public class TranscriberTest {
     }
 
     @Test
+    public void openRouterAsksForJsonAndParsesIt() throws Exception {
+        try (FakeServer s = new FakeServer()) {
+            s.response = "{\"text\":\" ذكرني عن الـ meeting \",\"usage\":{\"seconds\":4}}";
+            Transcriber.Transcript r = new OpenAiCompatibleTranscriber("openrouter:openai/whisper-large-v3",
+                    "OpenRouter", s.url(), "openai/whisper-large-v3", "sk-or", "", "", true).transcribe(audio());
+            assertEquals("ذكرني عن الـ meeting", r.text);
+            assertEquals("/v1/audio/transcriptions", s.path);
+            assertTrue(s.body.contains("name=\"response_format\"\r\n\r\njson\r\n"));
+            assertTrue(s.body.contains("name=\"model\"\r\n\r\nopenai/whisper-large-v3\r\n"));
+            assertFalse(s.body.contains("name=\"prompt\""));
+        }
+    }
+
+    @Test
     public void elevenLabsParsesJson() throws Exception {
         try (FakeServer s = new FakeServer()) {
             s.response = "{\"language_code\":\"ara\",\"text\":\" بكرة exam الساعة ٩ \",\"words\":[]}";

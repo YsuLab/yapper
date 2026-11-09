@@ -3,6 +3,15 @@
 Newest first. Format: date — decision — why.
 
 ## 2026-11-09 — M1 (Capture)
+- **OpenRouter slot: one key covers transcription (and can cover the M2 sorter).** Owner uses OpenRouter
+  for almost everything. OpenRouter has `POST /api/v1/audio/transcriptions` (multipart, JSON response,
+  no `prompt` field) with several STT models. The slot takes a comma-separated model list
+  (default `openai/gpt-4o-transcribe, openai/whisper-large-v3, microsoft/mai-transcribe-2`) and runs each as
+  its own transcriber, so the benchmark compares models with that one key. It has top priority when
+  benchmark mode is off. ElevenLabs Scribe is not on OpenRouter's STT list, so it still needs its own key
+  if we want it in the comparison.
+  For M2: OpenRouter also serves Claude models, so the sorter gets an OpenRouter provider. Trade-off: the
+  Max-plan API credits only pay for the direct Anthropic API, not OpenRouter. Owner picks per bill.
 - **Capture ends on silence (2 s default, configurable) or a tap. Side-key release is not used.**
   Android starts the assistant on the long-press and does not deliver the side key's release (or any
   power-key event) to a `VoiceInteractionSession`; Samsung handles the side key in the system. A second

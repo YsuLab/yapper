@@ -93,4 +93,9 @@ public final class Settings {
     public List<TranscriberConfig> activeTranscribers() {
         return TranscriberConfig.active(allTranscribers(), compareAll());
     }
+
+    /** The concrete transcribers to run on each capture. */
+    public List<com.ysulab.yapper.transcribe.Transcriber> transcribers() {
+        return TranscriberConfig.transcribers(allTranscribers(), compareAll());
+    }
 }

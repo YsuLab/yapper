@@ -154,13 +154,13 @@ public class MainActivity extends Activity {
         VaultAccess vault = VaultAccess.open(this, settings.vaultUri());
         sb.append(check(vault != null)).append(getString(R.string.st_vault))
                 .append(vault != null ? ": " + vault.name() : "").append('\n');
-        List<TranscriberConfig> active = settings.activeTranscribers();
+        List<com.ysulab.yapper.transcribe.Transcriber> active = settings.transcribers();
         sb.append(check(!active.isEmpty())).append(getString(R.string.st_transcribers)).append(": ");
         if (active.isEmpty()) {
             sb.append(getString(R.string.st_none));
         } else {
             for (int i = 0; i < active.size(); i++) {
-                sb.append(i == 0 ? "" : ", ").append(TranscriberConfig.displayName(active.get(i).id));
+                sb.append(i == 0 ? "" : ", ").append(active.get(i).label());
             }
         }
         int[] c = CaptureScheduler.counts(this);

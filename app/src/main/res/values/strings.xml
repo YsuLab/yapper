@@ -29,7 +29,7 @@
     <string name="section_capture">Capture</string>
     <string name="hint_silence">Seconds of silence that end a capture (default 2.0)</string>
     <string name="section_transcribers">Transcribers</string>
-    <string name="transcribers_help">Add a key to enable a provider. Keys are encrypted with the Android Keystore. Leave a key field empty to keep the saved key; type - to delete it. Self-hosted needs an https URL ending in /v1.</string>
+    <string name="transcribers_help">Add a key to enable a provider. Keys are encrypted with the Android Keystore. Leave a key field empty to keep the saved key; type - to delete it. OpenRouter: one key, several models (comma-separated), each is benchmarked. Self-hosted needs an https URL ending in /v1.</string>
     <string name="compare_all">Benchmark: run every configured transcriber on every capture</string>
     <string name="hint_key">API key</string>
     <string name="hint_key_saved">API key (saved, leave empty to keep)</string>

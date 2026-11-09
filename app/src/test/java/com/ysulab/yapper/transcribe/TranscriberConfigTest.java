@@ -76,4 +76,28 @@ public class TranscriberConfigTest {
         assertEquals("ElevenLabs scribe_v2", e.build().label());
         assertEquals("", e.prompt);
     }
+
+    @Test
+    public void openRouterOneKeyManyModels() {
+        List<TranscriberConfig> l = all();
+        TranscriberConfig or = get(l, TranscriberConfig.OPENROUTER);
+        or.apiKey = "sk-or-x";
+        or.model = "openai/gpt-4o-transcribe, openai/whisper-large-v3 ,,";
+        get(l, TranscriberConfig.GROQ).apiKey = "g";
+        List<String> ids = new ArrayList<>();
+        for (Transcriber t : TranscriberConfig.transcribers(l, true)) ids.add(t.id());
+        assertEquals(Arrays.asList("openrouter:openai/gpt-4o-transcribe",
+                "openrouter:openai/whisper-large-v3", "groq"), ids);
+        List<Transcriber> one = TranscriberConfig.transcribers(l, false);
+        assertEquals(1, one.size());
+        assertEquals("OpenRouter openai/gpt-4o-transcribe", one.get(0).label());
+        assertEquals("", or.prompt);
+    }
+
+    @Test
+    public void openRouterDefaultsToSeveralModels() {
+        TranscriberConfig or = new TranscriberConfig(TranscriberConfig.OPENROUTER);
+        assertEquals("https://openrouter.ai/api/v1", or.baseUrl);
+        assertTrue(or.models().size() >= 2);
+    }
 }

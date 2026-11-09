@@ -12,7 +12,6 @@ import androidx.work.WorkManager;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
 import com.ysulab.yapper.settings.Settings;
-import com.ysulab.yapper.transcribe.TranscriberConfig;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,8 +67,8 @@ public final class CaptureScheduler {
     public static void reconcile(Context context) {
         CaptureStore store = store(context);
         List<String> active = new ArrayList<>();
-        for (TranscriberConfig c : new Settings(context).activeTranscribers()) {
-            active.add(c.id);
+        for (com.ysulab.yapper.transcribe.Transcriber t : new Settings(context).transcribers()) {
+            active.add(t.id());
         }
         long now = System.currentTimeMillis();
         for (String id : store.ids()) {

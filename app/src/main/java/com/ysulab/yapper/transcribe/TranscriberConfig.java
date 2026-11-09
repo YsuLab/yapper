@@ -14,9 +14,17 @@ public final class TranscriberConfig {
     public static final String GROQ = "groq";
     public static final String ELEVENLABS = "elevenlabs";
     public static final String SELF_HOSTED = "selfhosted";
+    public static final String OPENROUTER = "openrouter";
 
     /** Order = priority. With "compare all" off, only the first configured one runs. */
-    public static final List<String> ALL = Arrays.asList(OPENAI, ELEVENLABS, GROQ, SELF_HOSTED);
+    public static final List<String> ALL = Arrays.asList(OPENROUTER, OPENAI, ELEVENLABS, GROQ, SELF_HOSTED);
+
+    /**
+     * OpenRouter slot default: several speech-to-text models behind one key, so the benchmark can
+     * compare them without other accounts. Comma-separated; each runs as its own transcriber.
+     */
+    public static final String OPENROUTER_DEFAULT_MODELS =
+            "openai/gpt-4o-transcribe, openai/whisper-large-v3, microsoft/mai-transcribe-2";
 
     /**
      * Whisper-style prompt: biases toward Saudi dialect written in Arabic script, with English terms
@@ -36,7 +44,8 @@ public final class TranscriberConfig {
         this.id = id;
         this.baseUrl = defaultUrl(id);
         this.model = defaultModel(id);
-        this.prompt = ELEVENLABS.equals(id) ? "" : DEFAULT_PROMPT;
+        // OpenRouter's transcription endpoint has no prompt field.
+        this.prompt = ELEVENLABS.equals(id) || OPENROUTER.equals(id) ? "" : DEFAULT_PROMPT;
     }
 
     public static String defaultUrl(String id) {
@@ -44,6 +53,7 @@ public final class TranscriberConfig {
             case OPENAI: return "https://api.openai.com/v1";
             case GROQ: return "https://api.groq.com/openai/v1";
             case ELEVENLABS: return ElevenLabsTranscriber.DEFAULT_URL;
+            case OPENROUTER: return "https://openrouter.ai/api/v1";
             default: return "";
         }
     }
@@ -53,6 +63,7 @@ public final class TranscriberConfig {
             case OPENAI: return "gpt-4o-transcribe";
             case GROQ: return "whisper-large-v3";
             case ELEVENLABS: return "scribe_v2";
+            case OPENROUTER: return OPENROUTER_DEFAULT_MODELS;
             default: return "Systran/faster-whisper-large-v3";
         }
     }
@@ -62,6 +73,7 @@ public final class TranscriberConfig {
             case OPENAI: return "OpenAI";
             case GROQ: return "Groq";
             case ELEVENLABS: return "ElevenLabs";
+            case OPENROUTER: return "OpenRouter";
             default: return "Self-hosted";
         }
     }
@@ -75,6 +87,45 @@ public final class TranscriberConfig {
             return baseUrl != null && baseUrl.trim().toLowerCase(java.util.Locale.ROOT).startsWith("https://");
         }
         return apiKey != null && !apiKey.trim().isEmpty();
+    }
+
+    /** Model ids of this slot (the OpenRouter slot may list several, comma-separated). */
+    public List<String> models() {
+        List<String> out = new ArrayList<>();
+        String raw = model == null || model.trim().isEmpty() ? defaultModel(id) : model;
+        for (String m : raw.split(",")) {
+            if (!m.trim().isEmpty()) {
+                out.add(m.trim());
+            }
+        }
+        return out;
+    }
+
+    /** One transcriber per model; only the OpenRouter slot can have more than one. */
+    public List<Transcriber> buildAll() {
+        List<Transcriber> out = new ArrayList<>();
+        if (!OPENROUTER.equals(id)) {
+            out.add(build());
+            return out;
+        }
+        String url = baseUrl == null || baseUrl.trim().isEmpty() ? defaultUrl(id) : baseUrl.trim();
+        for (String m : models()) {
+            out.add(new OpenAiCompatibleTranscriber(OPENROUTER + ":" + m, "OpenRouter " + m, url, m,
+                    apiKey == null ? "" : apiKey.trim(), language, "", true));
+        }
+        return out;
+    }
+
+    /** Every transcriber to run, in priority order. Compare mode off → just the first one. */
+    public static List<Transcriber> transcribers(List<TranscriberConfig> all, boolean compareAll) {
+        List<Transcriber> out = new ArrayList<>();
+        for (TranscriberConfig c : active(all, compareAll)) {
+            out.addAll(c.buildAll());
+        }
+        if (!compareAll && out.size() > 1) {
+            return out.subList(0, 1);
+        }
+        return out;
     }
 
     public Transcriber build() {

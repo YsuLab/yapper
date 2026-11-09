@@ -87,6 +87,8 @@ The repo is private, so you must be signed in to GitHub in the phone browser (or
 5. Back in Yapper tap **3 · Choose Obsidian vault folder** → pick (or create) your vault folder →
    *Use this folder* → *Allow*. Yapper creates `Inbox/` inside it.
 6. (Optional now, needed for transcripts) add one or more transcriber keys, then **Save**:
+   - **OpenRouter** (simplest: one key): openrouter.ai → Keys. The model field lists several speech models,
+     comma-separated; each one gets benchmarked.
    - **OpenAI**: platform.openai.com → API keys.
    - **ElevenLabs**: elevenlabs.io → Developers → API keys (Speech to Text permission).
    - **Groq**: console.groq.com → API keys (has a free tier).

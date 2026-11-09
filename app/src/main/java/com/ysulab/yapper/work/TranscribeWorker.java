@@ -11,7 +11,6 @@ import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
 import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.transcribe.Transcriber;
-import com.ysulab.yapper.transcribe.TranscriberConfig;
 import com.ysulab.yapper.transcribe.TranscriptionException;
 import com.ysulab.yapper.vault.InboxNote;
 import com.ysulab.yapper.vault.VaultAccess;
@@ -53,7 +52,7 @@ public final class TranscribeWorker extends Worker {
             return Result.success();
         }
         File audio = m.audioFile.isEmpty() ? null : store.file(id, m.audioFile);
-        List<TranscriberConfig> active = settings.activeTranscribers();
+        List<Transcriber> active = settings.transcribers();
         if (audio == null || !audio.isFile() || audio.length() == 0 || active.isEmpty()) {
             // Nothing to transcribe, or no provider yet. reconcile() re-queues when a key is added.
             return Result.success();
@@ -65,11 +64,10 @@ public final class TranscribeWorker extends Worker {
 
         boolean needRetry = false;
         String lastText = null;
-        for (TranscriberConfig cfg : active) {
-            if (m.transcribedBy.contains(cfg.id)) {
+        for (Transcriber t : active) {
+            if (m.transcribedBy.contains(t.id())) {
                 continue;
             }
-            Transcriber t = cfg.build();
             String block;
             try {
                 Transcriber.Transcript tr = t.transcribe(audio);
@@ -84,7 +82,7 @@ public final class TranscribeWorker extends Worker {
             }
             try {
                 appendToNote(vault, m, block);
-                m = store.update(id, x -> x.transcribedBy.add(cfg.id));
+                m = store.update(id, x -> x.transcribedBy.add(t.id()));
             } catch (IOException | RuntimeException e) {
                 return Result.retry();
             }

@@ -2,6 +2,24 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-09 — Models: API vs self-hosted
+- **Any model, not only Claude.** Transcriber model IDs and base URLs are already settings (M1). The M2 sorter
+  is built on the OpenAI-compatible chat API (tools + image input), not the Anthropic Messages API. OpenRouter
+  speaks it for Claude, GPT, Gemini, Qwen, etc., and vLLM / llama.cpp / Ollama speak it locally. So switching
+  model or moving to the home lab is a settings change, not code. Claude (Sonnet) is the starting baseline
+  because it is strong at following written rules and tool calls; the M2 eval set decides what else is good enough.
+- **Self-host transcription first.** Open-weight Arabic ASR caught up in 2026. Candidates for the self-hosted slot:
+  `IFM/Jais-ASR` (6B, Apache 2.0, ~12 GB BF16, AWQ/FP8 builds; Saudi dialect code, `code_switch` keeps English in
+  Latin script; vLLM plugin exposes `/v1/audio/transcriptions`) and Cohere Transcribe Arabic (open weights, Apache 2.0,
+  based on the 2B Cohere Transcribe). Vendor-reported avg WER on the Open Universal Arabic ASR sets: Jais-ASR 22.85,
+  ElevenLabs Scribe v2 24.54, Cohere Transcribe Arabic 25.87, Whisper large-v3 36.86. On SADA (Saudi) Jais-ASR is
+  30.85. Vendor numbers: the M1 benchmark (`score.py`) on the owner's own clips decides.
+- **Self-host the sorter only if it passes the eval.** 24 GB fits one ~30B model at 4-bit with vision + tools,
+  e.g. Qwen3.6-35B-A3B (Q4_K_M ≈ 22 GB, Apache 2.0), Qwen3.8-27B, Gemma 4 26B-A4B / 31B. Context left is ~35–55K
+  tokens, and STT + LLM do not both fit on 24 GB; a second 8–12 GB card holds the STT model. Run the M2 eval set
+  against the local model; switch when it reaches the same ≥ 90 % bar. Until then: local STT + API sorter.
+- **Fallback order** (later): self-hosted first, API when the home lab is unreachable, so a capture is never stuck.
+
 ## 2026-11-09 — M1 (Capture)
 - **OpenRouter slot: one key covers transcription (and can cover the M2 sorter).** Owner uses OpenRouter
   for almost everything. OpenRouter has `POST /api/v1/audio/transcriptions` (multipart, JSON response,

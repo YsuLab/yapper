@@ -55,9 +55,10 @@ Side key
 - **Audio:** record to file (AAC/m4a or Opus). Audio is the source of truth.
 - **Transcriber (pluggable):** Saudi Arabic + English code-switching. Benchmark ~10 real clips in M1; pick by
   accuracy on his speech, then latency, then cost. Check current docs on whether the Claude API takes audio.
-- **Sorter (LLM):** Claude Messages API, paid from the owner's linked Console org credits. Vision + tool use.
-  Configurable model ID; start `claude-sonnet-5-5`, test `claude-haiku-5-5`. Prompt caching for rules + index.
-  Provider interface so a GLM provider can be added later (not now).
+- **Sorter (LLM):** any model behind an OpenAI-compatible `/v1/chat/completions` endpoint with tool calls and
+  image input. Base URL + model ID + key are settings. Default: OpenRouter with a Claude Sonnet model as the
+  quality baseline. Same client works for a self-hosted vLLM / llama.cpp server on the home lab. Prompt caching
+  for rules + index where the provider supports it. See decisions 2026-11-09 (Models).
 - **Vault writer:** Obsidian vault on the phone via Storage Access Framework (persisted tree URI). Plain markdown.
 - **Reminders:** Microsoft Graph To Do → Samsung Reminder (two-way sync, one list). MSAL Android, personal
   account, delegated `Tasks.ReadWrite`. `todoTask` with `reminderDateTime` + `isReminderOn: true`.

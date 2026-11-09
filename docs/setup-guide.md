@@ -114,9 +114,29 @@ at the same time, and the data stays on your own server.
 Obsidian Sync (paid) also works with Yapper. Plugin-based sync (Remotely Save, LiveSync) only sees
 Yapper's files when Obsidian is open, so Syncthing is the better fit.
 
-## E. Later milestones
-- **Claude API key** (M2): claude.ai → Settings → Billing → API credits → Link organization. In Console, create
-  workspace `yapper` with a spend limit, then an API key in it. You'll paste it into the app, never the repo.
-- **Microsoft Entra app + To Do sync** (M3): turn on Microsoft To Do sync in Samsung Reminder. Claude will
-  give exact Entra steps then.
-- **Exact alarms** (M3): allow when the app asks.
+## E. Reminders: Microsoft To Do → Samsung Reminder (M3, ~15 min, once)
+
+Microsoft requires every app registration to live in a directory (tenant). A personal account gets one by
+signing up for Azure first.
+
+1. Open **portal.azure.com** with the Microsoft account Samsung Reminder will sync with. If it says you have no
+   directory or subscription, create a free account (**Azure for Students** with your KAU email needs no card;
+   the normal free account asks for a card for verification only). Nothing here costs money.
+2. **Microsoft Entra ID → App registrations → New registration**
+   - Name `Yapper`
+   - Supported account types: **Personal Microsoft accounts only**
+   - Redirect URI: **Public client/native (mobile & desktop)** → `yapper://auth`
+3. **API permissions → Add a permission → Microsoft Graph → Delegated** → `Tasks.ReadWrite` and `offline_access`.
+4. **Authentication** → *Allow public client flows* → **Yes** → Save.
+5. Copy the **Application (client) ID** (a GUID; not a secret).
+6. Phone: **Samsung Reminder → ☰ → Settings → sync with Microsoft To Do** → sign in with the same account.
+7. Yapper → *Reminders* → paste the client ID → **Sign in to Microsoft** → approve → pick the list Samsung
+   Reminder syncs.
+8. Tap **Test sync**. Note how long until the task appears in Samsung Reminder, and whether it rings at the time.
+   If it is late, raise the *Alarm window* so more reminders ring as phone alarms.
+
+Until you sign in, every reminder rings as a phone alarm, so nothing is missed.
+
+## F. Ramble, plan and debrief (M4–M5)
+- Quick Settings: edit the tiles and add **Ramble**. Long-press the Yapper icon for *Ramble / Plan my day / Debrief*.
+- Morning and evening nudges default to 08:00 and 21:30; change or clear them in Yapper → *Daily nudges*.

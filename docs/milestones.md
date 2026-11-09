@@ -50,3 +50,14 @@ Galaxy Watch, GLM provider, desktop companion.
 
 **Not in M2:** real reminders (M3), `ask_owner` as an actionable notification (questions go to `Inbox.md` for now),
 re-sorting captures made before M2.
+
+## M3–M5 scope (one PR, one APK — owner's request)
+- **M3 Reminders:** Microsoft sign-in (PKCE, no MSAL), pick the To Do list Samsung Reminder syncs, every
+  `create_reminder` → To Do task. Exact local alarm (Snooze / Done) for anything due within the alarm window,
+  without a double alert. Fallback to local alarms when To Do is unusable. "Test sync" button to measure the
+  Graph → Samsung Reminder delay. Undo deletes the To Do tasks and cancels alarms.
+- **M4 Ramble:** up to 60 min with the screen off, foreground service, 5-min parts cut at pauses, chunked
+  transcription with resume, one ramble → many actions. Start/stop from the app, Quick Settings tile, launcher
+  long-press shortcuts.
+- **M5 Today plan:** morning/evening nudge notifications; plan mode → `plan_day` time blocks + alarms; debrief
+  mode → `complete_task` ticks, unfinished items rolled to tomorrow.

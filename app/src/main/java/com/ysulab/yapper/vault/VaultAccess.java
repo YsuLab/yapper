@@ -99,6 +99,43 @@ public final class VaultAccess {
         }
     }
 
+    public DocumentFile root() {
+        return root;
+    }
+
+    public Context context() {
+        return context;
+    }
+
+    /** The file or folder at a vault-relative path, or null. Never creates anything. */
+    public DocumentFile findPath(String path) {
+        DocumentFile cur = root;
+        for (String part : path.split("/")) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            cur = cur.findFile(part);
+            if (cur == null) {
+                return null;
+            }
+        }
+        return cur;
+    }
+
+    /** Overwrites a file's content. Used for our own files (index, Undo of our own blocks). */
+    public void write(DocumentFile f, String text) throws IOException {
+        writeNew(f, text);
+    }
+
+    /** Creates an empty file with our exact name (no extension added by the provider). */
+    public DocumentFile createFile(DocumentFile dir, String name) throws IOException {
+        DocumentFile f = dir.createFile(MIME, name);
+        if (f == null) {
+            throw new IOException("Cannot create " + name);
+        }
+        return f;
+    }
+
     public DocumentFile find(DocumentFile dir, String name) {
         return dir.findFile(name);
     }

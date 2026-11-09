@@ -21,6 +21,9 @@
     <string name="needs_vault">Choose your Obsidian vault folder. Captures are safe on the phone until then.</string>
     <string name="saved_title">Saved to Inbox</string>
     <string name="transcribed_title">Transcript added</string>
+    <string name="channel_result">Sorted captures</string>
+    <string name="action_view">View</string>
+    <string name="action_undo">Undo</string>
 
     <!-- Setup screen -->
     <string name="btn_permissions">1 · Allow microphone and notifications</string>
@@ -36,6 +39,15 @@
     <string name="hint_model">Model</string>
     <string name="hint_url">Base URL, e.g. https://gpu.tailnet.ts.net/v1</string>
     <string name="hint_language">Language code (empty = auto-detect)</string>
+    <string name="section_sorter">Sorter (AI filing)</string>
+    <string name="sorter_help">After a capture is transcribed, the sorter reads _yapper/rules.md and the vault index, then appends your ideas to the right notes. Any OpenAI-compatible server works. Empty key with the OpenRouter URL = uses the OpenRouter key from Transcribers.</string>
+    <string name="hint_sorter_url">Base URL (default https://openrouter.ai/api/v1)</string>
+    <string name="hint_sorter_model">Model (default anthropic/claude-sonnet-5.5)</string>
+    <string name="sorter_shadow">Preview only (shadow mode): write proposals into the capture note, not the vault</string>
+    <string name="sorter_move">Move sorted captures out of Inbox/ into _yapper/captures/</string>
+    <string name="sorter_screens">Send the screenshot when there is little screen text</string>
+    <string name="st_sorter">Sorter</string>
+    <string name="st_sorter_off">add an OpenRouter key</string>
     <string name="btn_save">Save</string>
     <string name="btn_retry">Retry unfinished captures</string>
     <string name="saved">Saved</string>
@@ -47,4 +59,5 @@
     <string name="st_transcribers">Transcribers</string>
     <string name="st_none">none yet (notes get audio only)</string>
     <string name="st_captures">Captures: %1$d in Inbox · %2$d waiting to be saved · %3$d waiting for transcripts</string>
+    <string name="st_sorted">Sorted: %1$d · preview only: %2$d · failed: %3$d · undone: %4$d</string>
 </resources>

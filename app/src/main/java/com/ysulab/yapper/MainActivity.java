@@ -20,6 +20,7 @@ import android.widget.Toast;
 import com.ysulab.yapper.assist.YapperAssistService;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.settings.Settings;
+import com.ysulab.yapper.sort.SorterConfig;
 import com.ysulab.yapper.transcribe.TranscriberConfig;
 import com.ysulab.yapper.vault.VaultAccess;
 import com.ysulab.yapper.work.CaptureScheduler;
@@ -39,6 +40,12 @@ public class MainActivity extends Activity {
     private CheckBox compareAll;
     private EditText silence;
     private final List<Slot> slots = new ArrayList<>();
+    private EditText sorterUrl;
+    private EditText sorterModel;
+    private EditText sorterKey;
+    private CheckBox sorterShadow;
+    private CheckBox sorterMove;
+    private CheckBox sorterScreens;
 
     private static final class Slot {
         TranscriberConfig cfg;
@@ -67,13 +74,27 @@ public class MainActivity extends Activity {
         ((Button) findViewById(R.id.btn_vault)).setOnClickListener(v -> pickVault());
         ((Button) findViewById(R.id.btn_save)).setOnClickListener(v -> save());
         ((Button) findViewById(R.id.btn_retry)).setOnClickListener(v -> {
-            new Thread(() -> CaptureScheduler.reconcile(getApplicationContext())).start();
+            new Thread(() -> CaptureScheduler.reconcile(getApplicationContext(), true)).start();
             Toast.makeText(this, R.string.retry_queued, Toast.LENGTH_SHORT).show();
         });
 
         buildSlots(findViewById(R.id.transcribers));
         compareAll.setChecked(settings.compareAll());
         silence.setText(String.format(Locale.ROOT, "%.1f", settings.silenceMs() / 1000.0));
+
+        SorterConfig sc = settings.sorter();
+        sorterUrl = findViewById(R.id.sorter_url);
+        sorterModel = findViewById(R.id.sorter_model);
+        sorterKey = findViewById(R.id.sorter_key);
+        sorterShadow = findViewById(R.id.sorter_shadow);
+        sorterMove = findViewById(R.id.sorter_move);
+        sorterScreens = findViewById(R.id.sorter_screens);
+        sorterUrl.setText(sc.baseUrl);
+        sorterModel.setText(sc.model);
+        sorterKey.setHint(settings.hasOwnSorterKey() ? R.string.hint_key_saved : R.string.hint_key);
+        sorterShadow.setChecked(sc.shadow);
+        sorterMove.setChecked(sc.moveSorted);
+        sorterScreens.setChecked(sc.screenshots);
     }
 
     @Override
@@ -131,6 +152,16 @@ public class MainActivity extends Activity {
                     ? R.string.hint_key : R.string.hint_key_saved));
         }
         settings.setCompareAll(compareAll.isChecked());
+        SorterConfig sc = settings.sorter();
+        sc.baseUrl = sorterUrl.getText().toString().trim();
+        sc.model = sorterModel.getText().toString().trim();
+        sc.shadow = sorterShadow.isChecked();
+        sc.moveSorted = sorterMove.isChecked();
+        sc.screenshots = sorterScreens.isChecked();
+        String sk = sorterKey.getText().toString().trim();
+        settings.saveSorter(sc, sk.isEmpty() ? null : ("-".equals(sk) ? "" : sk));
+        sorterKey.setText("");
+        sorterKey.setHint(settings.hasOwnSorterKey() ? R.string.hint_key_saved : R.string.hint_key);
         try {
             settings.setSilenceMs(Math.round(Double.parseDouble(silence.getText().toString().trim()) * 1000));
         } catch (NumberFormatException ignored) {
@@ -163,11 +194,17 @@ public class MainActivity extends Activity {
                 sb.append(i == 0 ? "" : ", ").append(active.get(i).label());
             }
         }
+        SorterConfig sc = settings.sorter();
+        sb.append('\n').append(check(sc.isConfigured())).append(getString(R.string.st_sorter)).append(": ")
+                .append(sc.isConfigured() ? sc.modelId() + (sc.shadow ? " (preview only)" : "")
+                        : getString(R.string.st_sorter_off));
         int[] c = CaptureScheduler.counts(this);
         sb.append("\n\n").append(getString(R.string.st_captures, c[CaptureMeta.State.DONE.ordinal()]
                         + c[CaptureMeta.State.INBOX.ordinal()],
                 c[CaptureMeta.State.RECORDED.ordinal()] + c[CaptureMeta.State.RECORDING.ordinal()],
                 c[CaptureMeta.State.INBOX.ordinal()]));
+        int[] so = CaptureScheduler.sortCounts(this);
+        sb.append('\n').append(getString(R.string.st_sorted, so[0], so[1], so[2], so[3]));
         status.setText(sb.toString());
     }
 
@@ -221,7 +258,10 @@ public class MainActivity extends Activity {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             settings.setVaultUri(uri);
             Notifications.clearNeedsSetup(this);
-            new Thread(() -> CaptureScheduler.reconcile(getApplicationContext())).start();
+            new Thread(() -> {
+                CaptureScheduler.ensureRules(getApplicationContext());
+                CaptureScheduler.reconcile(getApplicationContext());
+            }).start();
             refreshStatus();
         }
     }

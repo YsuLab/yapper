@@ -7,7 +7,7 @@ and a "Test on phone" checklist (≤ 10 steps). The owner tests and replies by v
 |---|---|---|---|
 | M0 | **Foundation.** Java Android app, Gradle, docs, CI (build + unit tests + APK signed with a stable key from a GitHub secret), owner setup guide. | CI is green and the APK installs on the phone | In progress |
 | M1 | **Capture.** Assistant registration, side key, screenshot + screen text + audio. "Got it" in < 1 s. Bundle → `Inbox/` in the vault (transcript + screenshot + audio link). Transcriber benchmark on ~10 real clips. | 10 captures in a row, none lost, including offline | In progress |
-| M2 | **Sorter.** LLM (OpenAI-compatible, any model; Claude via OpenRouter first) + `rules.md` + `index.md` → vault writes. Shadow mode ~3 days (proposals into Inbox), eval set in `evals/`, then auto-apply. Undo works. | ≥ 90% correct routing on the eval set | Not started |
+| M2 | **Sorter.** LLM (OpenAI-compatible, any model; Claude via OpenRouter first) + `rules.md` + `index.md` → vault writes. Shadow mode is a toggle (default off: writes for real, Undo on every result). Eval set in `evals/`. | ≥ 90% correct routing on the eval set | In progress |
 | M3 | **Reminders.** MSAL sign-in, Graph To Do, Samsung Reminder sync, latency measurement, exact-alarm safety net if needed. | WhatsApp timetable screenshot + "5 and 15 min before each" → reminders ring on time | Not started |
 | M4 | **Ramble mode.** Long recording, chunked transcription, one ramble → many actions. Battery-friendly. | A 20-min ramble is fully sorted, nothing lost | Not started |
 | M5 | **Today plan.** Morning ramble → time blocks + alarms. Evening debrief → done items checked, rest rolled over. | Owner plans 5 days in a row by voice | Not started |
@@ -34,3 +34,19 @@ Galaxy Watch, GLM provider, desktop companion.
   capture counters, "Retry unfinished".
 
 **Not in M1:** sorting, reminders, Undo/View result notifications (M2+), ramble mode (M4).
+
+## M2 scope (this PR)
+- After transcription, `SortWorker` sends transcript + screen text (+ screenshot only when screen text is thin),
+  `_yapper/rules.md`, `_yapper/index.md` and today's daily note to an OpenAI-compatible model with 5 tools.
+- Tool calls are validated (`SafePath`, dates, known tools) and applied: append under a dated heading, create
+  notes, daily-note sections, questions into `Inbox.md`. Every block tagged `%%yap:<id>/<n>%%`.
+- `create_reminder` lands as `- [ ] ⏰ HH:mm …` under `## Reminders` in that day's daily note; M3 sends the same
+  log entries to Microsoft To Do.
+- Plan saved before writing, action log after; retries never duplicate. Undo from the notification removes exactly
+  what was written (blocks you edited are kept) and moves the capture back to `Inbox/`.
+- Sorted capture notes (audio, screenshot, transcript, "## Sorted" list of links) move to `_yapper/captures/`.
+- Settings: base URL, model, key (empty = reuse the OpenRouter transcriber key), shadow mode, move, screenshots.
+- `evals/cases.jsonl` (20 synthetic cases) + `tools/sorter-eval/run_eval.py`.
+
+**Not in M2:** real reminders (M3), `ask_owner` as an actionable notification (questions go to `Inbox.md` for now),
+re-sorting captures made before M2.

@@ -73,6 +73,10 @@ public final class TranscribeWorker extends Worker {
                 Transcriber.Transcript tr = t.transcribe(audio);
                 block = InboxNote.transcriptBlock(id, t.label(), tr.latencyMs, tr.text);
                 lastText = tr.text;
+                // Kept in the bundle for the sorter (M2), before the note, so a retry has it too.
+                store.writeText(id, SortWorker.transcriptFile(t.id()), tr.text == null ? "" : tr.text);
+            } catch (IOException e) {
+                return Result.retry();
             } catch (TranscriptionException e) {
                 if (e.retryable && getRunAttemptCount() < MAX_ATTEMPTS) {
                     needRetry = true;
@@ -95,7 +99,10 @@ public final class TranscribeWorker extends Worker {
         } catch (IOException e) {
             return Result.retry();
         }
-        if (lastText != null) {
+        if (settings.sorter().isConfigured()) {
+            // The sorter's result notification replaces the transcript one.
+            CaptureScheduler.enqueueSort(ctx, id);
+        } else if (lastText != null) {
             String preview = lastText.length() > 120 ? lastText.substring(0, 120) + "…" : lastText;
             Notifications.status(ctx, ctx.getString(R.string.transcribed_title), preview);
         }

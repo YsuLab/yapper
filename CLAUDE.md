@@ -13,10 +13,16 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`.
 - `capture/` — pure Java: `CaptureStore`/`CaptureMeta` (bundles), `SilenceDetector`, `ScreenText`, `ScreenshotCheck`.
 - `work/` — WorkManager: `InboxWorker` (vault note, offline), `TranscribeWorker` (network), `CaptureScheduler.reconcile`.
-- `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java).
+- `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java), `VaultFs` (path API;
+  `SafVaultFs` on the phone, `MemoryVaultFs` in tests), `VaultIndex` (`_yapper/index.md`).
+- `sort/` — M2 sorter, pure Java: `Sorter` (OpenAI-compatible `/chat/completions` + tool calls), `SorterPrompt`,
+  `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
+  `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
+- `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `tools/transcribe-bench/score.py` — CER/WER per transcriber from Inbox notes (`python3 -m unittest` in CI).
+- `tools/sorter-eval/run_eval.py` + `evals/cases.jsonl` — routing eval against any model (bar ≥ 90 %).
 
 ## Build
 - `./gradlew testDebugUnitTest` — unit tests.

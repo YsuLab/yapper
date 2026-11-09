@@ -33,6 +33,17 @@ public final class YapId {
         return id != null && VALID.matcher(id).matches();
     }
 
+    /**
+     * Marker for the n-th block one capture wrote, e.g. {@code %%yap:20261109-142305-ab12/3%%}.
+     * Lets a retry see that this exact action already ran.
+     */
+    public static String blockMarker(String id, int n) {
+        if (!isValid(id) || n < 0) {
+            throw new IllegalArgumentException("Invalid yap id: " + id);
+        }
+        return "%%yap:" + id + "/" + n + "%%";
+    }
+
     /** The hidden Obsidian comment that tags a written block. */
     public static String marker(String id) {
         if (!isValid(id)) {

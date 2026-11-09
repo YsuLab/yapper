@@ -31,6 +31,9 @@ Newest first. Format: date — decision — why.
   that day's daily note; logged with the exact before/after line, so Undo reverts it. This is the one exception
   to "append only", because the milestone asks for done items to be checked. No match → `- [x]` line under
   `## Debrief`, so nothing is lost. Unfinished items roll over to tomorrow via `add_to_daily` ("Rolled over").
+- **Sorter `tool_choice: "auto"` (was "required").** Phone test: Claude via OpenRouter returned HTTP 400
+  ("tool_choice type any … not supported" with thinking on). The prompt still demands tool calls only; a text
+  answer becomes an ask_owner question, so nothing is lost.
 - **Daily nudges** at 08:00 and 21:30 (settings, empty = off), inexact alarms. One tap starts a plan or debrief
   ramble. The owner forgets lists that need him to look, so the app comes to him.
 

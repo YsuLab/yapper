@@ -78,7 +78,10 @@ public final class SorterPrompt {
                 .put("model", cfg.modelId())
                 .put("messages", messages)
                 .put("tools", new JSONArray(toolsJson))
-                .put("tool_choice", "required")
+                // "auto", not "required": Claude models with extended thinking reject forced tool use
+                // (OpenRouter maps "required" to Anthropic's "any"). The prompt says "tool calls only",
+                // and a text-only answer becomes an ask_owner question (Sorter.parse).
+                .put("tool_choice", "auto")
                 .put("temperature", 0.2)
                 .put("max_tokens", 16000);
     }

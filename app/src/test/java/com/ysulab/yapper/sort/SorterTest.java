@@ -95,7 +95,7 @@ public class SorterTest {
             Sorter.Result r = new Sorter(cfg, asset("system.md"), asset("tools.json")).sort(input());
             assertEquals("/v1/chat/completions", s.path);
             assertEquals("Bearer sk-test", s.auth);
-            assertTrue(s.body.contains("\"tool_choice\":\"required\""));
+            assertTrue(s.body.contains("\"tool_choice\":\"auto\""));
             assertEquals(2, r.actions.size());
             assertEquals(1, r.dropped.size());
             assertEquals("Uni/Algorithms.md", r.actions.get(0).path);

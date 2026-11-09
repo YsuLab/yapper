@@ -6,8 +6,11 @@ Newest first. Format: date — decision — why.
 - **Shadow mode is a toggle, default off.** The brief planned ~3 days of proposals first. The owner wants real
   filing now, and every write is append-only, tagged and undoable, so the safety comes from Undo instead. The
   toggle stays for testing a new model or new rules: proposals go into the capture note, nothing else changes.
-- **One model call per capture, tool calls only, `tool_choice: required`.** The tools have no results the model
-  needs, so there is no agent loop: faster, cheaper, and easier to replay. A text-only answer becomes a question.
+- **One model call per capture, tool calls only.** The tools have no results the model needs, so there is no
+  agent loop: faster, cheaper, and easier to replay. A text-only answer becomes a question.
+- **`tool_choice: "auto"`, not "required".** Phone test: Claude via OpenRouter returned HTTP 400 ("tool_choice
+  type any … not supported" with thinking on). The prompt still demands tool calls only; a text answer becomes an
+  ask_owner question, so nothing is lost.
 - **Every tool call is validated before it touches the vault.** `SafePath` rejects `..`, hidden folders and
   `_yapper/`, fixes wikilink-style paths and adds `.md`; reminders need an ISO time with offset. Invalid calls are
   dropped and listed in the capture note.

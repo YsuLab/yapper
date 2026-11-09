@@ -63,7 +63,7 @@ def request(case, model):
             {"role": "user", "content": [{"type": "text", "text": user_text(case["transcript"], case.get("screen_text", ""))}]},
         ],
         "tools": json.loads(read(os.path.join(ASSETS, "tools.json"))),
-        "tool_choice": "required",
+        "tool_choice": "auto",
         "temperature": 0.2,
         "max_tokens": 8000,
     }

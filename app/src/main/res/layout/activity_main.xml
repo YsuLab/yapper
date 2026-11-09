@@ -54,6 +54,38 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:text="@string/section_talk"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/talk_help"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_ramble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ramble" />
+
+        <Button
+            android:id="@+id/btn_plan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_plan" />
+
+        <Button
+            android:id="@+id/btn_debrief"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_debrief" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:text="@string/section_capture"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -146,6 +178,91 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/sorter_screens" />
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/section_reminders"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/reminders_help"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/ms_client_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_ms_client_id"
+            android:inputType="text"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/btn_ms_sign_in"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ms_sign_in" />
+
+        <Button
+            android:id="@+id/btn_ms_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ms_list" />
+
+        <Button
+            android:id="@+id/btn_ms_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ms_test" />
+
+        <Button
+            android:id="@+id/btn_ms_sign_out"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_ms_sign_out" />
+
+        <EditText
+            android:id="@+id/alarm_window"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_alarm_window"
+            android:inputType="number"
+            android:singleLine="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/section_today"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/today_help"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/nudge_morning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_nudge_morning"
+            android:inputType="time"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/nudge_evening"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_nudge_evening"
+            android:inputType="time"
+            android:singleLine="true" />
 
         <Button
             android:id="@+id/btn_save"

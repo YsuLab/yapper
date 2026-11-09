@@ -46,6 +46,20 @@ public final class UndoWorker extends Worker {
                 return Result.success();
             }
             ActionLog log = ActionLog.parse(store.readText(id, SortWorker.ACTIONS));
+            // M3 first: cancel alarms, delete To Do tasks. A network failure retries the whole undo.
+            com.ysulab.yapper.reminders.MsAccount acct = new com.ysulab.yapper.reminders.MsAccount(ctx);
+            int todoLeft;
+            try {
+                todoLeft = new com.ysulab.yapper.reminders.ReminderSync(id,
+                        new com.ysulab.yapper.reminders.LocalAlarms(ctx), 0)
+                        .undo(log, acct.isSignedIn() ? acct.todo() : null);
+            } catch (Exception e) {
+                store.writeText(id, SortWorker.ACTIONS, log.serialize());
+                if (getRunAttemptCount() < 4) {
+                    return Result.retry();
+                }
+                todoLeft = -1;
+            }
             Executor.UndoResult r;
             try {
                 r = new Executor(fs, id, "", ZonedDateTime.now(SortWorker.zone(m))).undo(log);
@@ -58,6 +72,7 @@ public final class UndoWorker extends Worker {
             Notifications.cancelResult(ctx, id);
             Notifications.status(ctx, "Undone",
                     "Removed " + r.removed + (r.kept > 0 ? ", kept " + r.kept + " you edited" : "")
+                            + (todoLeft != 0 ? ". Some To Do tasks could not be removed" : "")
                             + ". The capture is back in Inbox.");
             return Result.success();
         } catch (Exception e) {

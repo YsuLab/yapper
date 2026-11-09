@@ -29,12 +29,42 @@ public final class InboxNote {
 
     /** e.g. {@code Capture 2026-11-09 142305.md} in the owner's time zone. */
     public static String fileName(CaptureMeta m) {
-        return "Capture " + local(m).format(FILE_STAMP) + ".md";
+        String kind;
+        switch (m.mode) {
+            case "ramble": kind = "Ramble "; break;
+            case "plan": kind = "Plan "; break;
+            case "debrief": kind = "Debrief "; break;
+            default: kind = "Capture "; break;
+        }
+        return kind + local(m).format(FILE_STAMP) + ".md";
     }
 
     public static String audioName(CaptureMeta m) {
         String ext = m.audioFile.contains(".") ? m.audioFile.substring(m.audioFile.lastIndexOf('.')) : ".ogg";
         return m.id + ext;
+    }
+
+    /**
+     * Vault file name of one audio part: {@code <id>.ogg} for a quick capture, {@code <id>-02.ogg}
+     * for ramble part 2.
+     */
+    public static String audioName(CaptureMeta m, String part) {
+        if (m.audioParts.isEmpty()) {
+            return audioName(m);
+        }
+        String ext = part.contains(".") ? part.substring(part.lastIndexOf('.')) : ".ogg";
+        String base = part.contains(".") ? part.substring(0, part.lastIndexOf('.')) : part;
+        String n = base.startsWith("audio-") ? base.substring(6) : base;
+        return m.id + "-" + n + ext;
+    }
+
+    /** Every vault audio name of this capture, in order. */
+    public static java.util.List<String> audioNames(CaptureMeta m) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String p : m.parts()) {
+            out.add(audioName(m, p));
+        }
+        return out;
     }
 
     public static String screenshotName(CaptureMeta m) {
@@ -44,7 +74,7 @@ public final class InboxNote {
     public static String build(CaptureMeta m, String screenText, boolean hasScreenshot, boolean hasAudio) {
         StringBuilder sb = new StringBuilder();
         sb.append("---\n");
-        sb.append("yapper: capture\n");
+        sb.append("yapper: ").append(m.mode.isEmpty() ? "capture" : m.mode).append('\n');
         sb.append("yap_id: ").append(m.id).append('\n');
         sb.append("captured: ").append(local(m).format(ISO)).append('\n');
         if (!m.sourceApp.isEmpty()) {
@@ -59,7 +89,9 @@ public final class InboxNote {
         sb.append("---\n");
         sb.append(YapId.marker(m.id)).append('\n');
         if (hasAudio) {
-            sb.append("![[").append(audioName(m)).append("]]\n");
+            for (String name : audioNames(m)) {
+                sb.append("![[").append(name).append("]]\n");
+            }
         } else {
             sb.append("_No audio recorded (microphone unavailable)._\n");
         }

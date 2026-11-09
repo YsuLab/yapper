@@ -51,6 +51,37 @@ public final class Settings {
         return 5 * 60_000L;
     }
 
+    /** M3: reminders due within this window ring as a local exact alarm (To Do stays quiet). */
+    public long alarmWindowMs() {
+        return prefs.getInt("alarm_window_min", 60) * 60_000L;
+    }
+
+    public int alarmWindowMin() {
+        return prefs.getInt("alarm_window_min", 60);
+    }
+
+    public void setAlarmWindowMin(int min) {
+        prefs.edit().putInt("alarm_window_min", Math.max(0, Math.min(7 * 24 * 60, min))).apply();
+    }
+
+    /** M4: hard cap for one ramble. */
+    public long maxRambleMs() {
+        return prefs.getInt("ramble_max_min", 60) * 60_000L;
+    }
+
+    /** M5: daily nudges, minutes after midnight; -1 = off. */
+    public int morningNudgeMin() {
+        return prefs.getInt("nudge_morning", 8 * 60);
+    }
+
+    public int eveningNudgeMin() {
+        return prefs.getInt("nudge_evening", 21 * 60 + 30);
+    }
+
+    public void setNudges(int morningMin, int eveningMin) {
+        prefs.edit().putInt("nudge_morning", morningMin).putInt("nudge_evening", eveningMin).apply();
+    }
+
     /** M1 benchmark: run every configured transcriber on every capture. */
     public boolean compareAll() {
         return prefs.getBoolean("compare_all", true);

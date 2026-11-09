@@ -51,9 +51,15 @@ public final class TranscribeWorker extends Worker {
         if (m.state != CaptureMeta.State.INBOX) {
             return Result.success();
         }
-        File audio = m.audioFile.isEmpty() ? null : store.file(id, m.audioFile);
+        List<File> audio = new java.util.ArrayList<>();
+        for (String part : m.parts()) {
+            File f = store.file(id, part);
+            if (f.isFile() && f.length() > 0) {
+                audio.add(f);
+            }
+        }
         List<Transcriber> active = settings.transcribers();
-        if (audio == null || !audio.isFile() || audio.length() == 0 || active.isEmpty()) {
+        if (audio.isEmpty() || active.isEmpty()) {
             // Nothing to transcribe, or no provider yet. reconcile() re-queues when a key is added.
             return Result.success();
         }
@@ -70,11 +76,45 @@ public final class TranscribeWorker extends Worker {
             }
             String block;
             try {
-                Transcriber.Transcript tr = t.transcribe(audio);
-                block = InboxNote.transcriptBlock(id, t.label(), tr.latencyMs, tr.text);
-                lastText = tr.text;
+                // M4: a ramble has several parts. Each part's text is saved as soon as it arrives,
+                // so a retry only redoes the parts that are missing.
+                StringBuilder all = new StringBuilder();
+                long latency = 0;
+                boolean partsPending = false;
+                for (int i = 0; i < audio.size(); i++) {
+                    String partFile = partFile(t.id(), i);
+                    if (!store.file(id, partFile).isFile()) {
+                        try {
+                            Transcriber.Transcript tr = t.transcribe(audio.get(i));
+                            store.writeText(id, partFile, tr.text == null ? "" : tr.text.trim());
+                            latency += tr.latencyMs;
+                        } catch (TranscriptionException e) {
+                            if (e.retryable && getRunAttemptCount() < MAX_ATTEMPTS) {
+                                partsPending = true;
+                                continue;
+                            }
+                            if (audio.size() == 1) {
+                                throw e;
+                            }
+                            // One bad part must not sink a 40-minute ramble: note the gap, keep the rest.
+                            store.writeText(id, partFile, "[part " + (i + 1) + " could not be transcribed: "
+                                    + e.getMessage() + "]");
+                        }
+                    }
+                    String text = store.readText(id, partFile);
+                    if (!text.isEmpty()) {
+                        all.append(all.length() == 0 ? "" : "\n\n").append(text);
+                    }
+                }
+                if (partsPending) {
+                    needRetry = true;
+                    continue;
+                }
+                String text = all.toString();
+                block = InboxNote.transcriptBlock(id, t.label(), latency, text);
+                lastText = text;
                 // Kept in the bundle for the sorter (M2), before the note, so a retry has it too.
-                store.writeText(id, SortWorker.transcriptFile(t.id()), tr.text == null ? "" : tr.text);
+                store.writeText(id, SortWorker.transcriptFile(t.id()), text);
             } catch (IOException e) {
                 return Result.retry();
             } catch (TranscriptionException e) {
@@ -107,6 +147,12 @@ public final class TranscribeWorker extends Worker {
             Notifications.status(ctx, ctx.getString(R.string.transcribed_title), preview);
         }
         return Result.success();
+    }
+
+    /** Bundle file with one transcriber's text for audio part {@code index} (0-based). */
+    static String partFile(String transcriberId, int index) {
+        return String.format(java.util.Locale.ROOT, "part-%02d-", index + 1)
+                + SortWorker.transcriptFile(transcriberId);
     }
 
     private static void appendToNote(VaultAccess vault, CaptureMeta m, String block) throws IOException {

@@ -19,11 +19,16 @@ final class AudioCapture {
 
     /** Starts recording into {@code dir}. Returns the file name used. */
     String start(Context context, File dir) throws IOException {
+        return start(context, dir, "audio");
+    }
+
+    /** Same, with a base name ("audio-03" for ramble part 3). */
+    String start(Context context, File dir, String base) throws IOException {
         try {
-            return startWith(context, new File(dir, "audio.ogg"), true);
+            return startWith(context, new File(dir, base + ".ogg"), true);
         } catch (IOException | RuntimeException e) {
             release();
-            return startWith(context, new File(dir, "audio.m4a"), false);
+            return startWith(context, new File(dir, base + ".m4a"), false);
         }
     }
 

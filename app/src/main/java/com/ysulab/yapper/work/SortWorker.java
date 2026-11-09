@@ -157,11 +157,18 @@ public final class SortWorker extends Worker {
 
             ActionLog log = ActionLog.parse(store.readText(id, ACTIONS));
             Executor ex = new Executor(fs, id, noteName(m.inboxPath), captured);
+            boolean pushTodo;
             try {
                 ex.execute(plan, log);
             } finally {
                 store.writeText(id, ACTIONS, log.serialize());
             }
+            // M3: local alarms are set now (offline); To Do tasks go out in ReminderWorker.
+            com.ysulab.yapper.reminders.MsAccount acct = new com.ysulab.yapper.reminders.MsAccount(ctx);
+            pushTodo = new com.ysulab.yapper.reminders.ReminderSync(id,
+                    new com.ysulab.yapper.reminders.LocalAlarms(ctx), settings.alarmWindowMs())
+                    .route(log, System.currentTimeMillis(), acct.isReady());
+            store.writeText(id, ACTIONS, log.serialize());
             appendToCapture(fs, m, Summary.sortedBlock(id, plan, model, latency, zone, dropped));
             if (cfg.moveSorted) {
                 m = moveCapture(fs, store, m, CAPTURES_DIR);
@@ -170,6 +177,9 @@ public final class SortWorker extends Worker {
                 x.sorted = "done";
                 x.sortSummary = summary;
             });
+            if (pushTodo) {
+                CaptureScheduler.enqueueReminders(ctx, id);
+            }
             String view = Summary.viewPath(plan);
             Notifications.sortResult(ctx, id, "Sorted ✓", summary, view == null ? m.inboxPath : view,
                     vault.name(), true);
@@ -214,6 +224,7 @@ public final class SortWorker extends Worker {
             return null; // screen-only captures stay in Inbox
         }
         in.now = captured;
+        in.mode = m.mode;
         in.sourceApp = m.sourceApp;
         in.sourceUrl = m.webUri;
         String rules = fs.read(VaultIndex.RULES_PATH);
@@ -317,7 +328,9 @@ public final class SortWorker extends Worker {
         }
         String fromDir = m.inboxPath.contains("/") ? m.inboxPath.substring(0, m.inboxPath.lastIndexOf('/')) : "";
         String prefix = fromDir.isEmpty() ? "" : fromDir + "/";
-        for (String att : new String[] {InboxNote.audioName(m), InboxNote.screenshotName(m)}) {
+        List<String> atts = new ArrayList<>(InboxNote.audioNames(m));
+        atts.add(InboxNote.screenshotName(m));
+        for (String att : atts) {
             String from = prefix + InboxNote.ATTACHMENTS_DIR + "/" + att;
             String to = toDir + "/" + InboxNote.ATTACHMENTS_DIR + "/" + att;
             if (!fs.exists(to)) {

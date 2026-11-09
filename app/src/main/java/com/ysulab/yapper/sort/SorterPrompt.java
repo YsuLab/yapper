@@ -18,7 +18,7 @@ public final class SorterPrompt {
     static final int MAX_INDEX = 40_000;
     static final int MAX_DAILY = 8_000;
     static final int MAX_SCREEN = 8_000;
-    static final int MAX_TRANSCRIPT = 60_000;
+    static final int MAX_TRANSCRIPT = 150_000;
     /** Below this many characters of screen text, the screenshot is worth sending. */
     public static final int THIN_SCREEN_TEXT = 80;
 
@@ -37,6 +37,10 @@ public final class SorterPrompt {
 
     public static String userText(SorterInput in) {
         StringBuilder sb = new StringBuilder();
+        String mode = modeNote(in.mode);
+        if (!mode.isEmpty()) {
+            sb.append("## Capture mode\n").append(mode).append("\n\n");
+        }
         sb.append("## Transcript\n");
         String t = in.transcript == null ? "" : in.transcript.trim();
         sb.append(t.isEmpty() ? "(no speech)" : cap(t, MAX_TRANSCRIPT)).append("\n\n");
@@ -76,7 +80,26 @@ public final class SorterPrompt {
                 .put("tools", new JSONArray(toolsJson))
                 .put("tool_choice", "required")
                 .put("temperature", 0.2)
-                .put("max_tokens", 8000);
+                .put("max_tokens", 16000);
+    }
+
+    static String modeNote(String mode) {
+        if (mode == null) return "";
+        switch (mode) {
+            case "plan":
+                return "Morning plan. He is planning the day: call plan_day once with time blocks for the "
+                        + "day he means (default today), in order. Tasks without a time go in the plan's notes "
+                        + "as \"- [ ] \" lines. Other items he mentions are sorted as usual.";
+            case "debrief":
+                return "Evening debrief. For each thing he says he finished, call complete_task. Unfinished "
+                        + "things he wants to keep → add_to_daily for tomorrow, section \"Rolled over\", as "
+                        + "\"- [ ] \" lines. Reflections → add_to_daily for today, section \"Debrief\".";
+            case "ramble":
+                return "Long ramble (many minutes, many topics). Split it into every separate item and file "
+                        + "each one. Expect many tool calls.";
+            default:
+                return "";
+        }
     }
 
     static String cap(String s, int max) {

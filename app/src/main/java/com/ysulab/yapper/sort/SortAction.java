@@ -14,6 +14,18 @@ public final class SortAction {
     public static final String DAILY = "add_to_daily";
     public static final String REMINDER = "create_reminder";
     public static final String ASK = "ask_owner";
+    /** M5: time blocks for a day → "## Plan" in the daily note, plus an alarm at each block start. */
+    public static final String PLAN = "plan_day";
+    /** M5 debrief: tick a "- [ ]" task in a daily note. */
+    public static final String CHECK = "complete_task";
+
+    /** One plan_day time block. */
+    public static final class Block {
+        public String start = "";
+        public String end = "";
+        public String title = "";
+        public boolean alarm = true;
+    }
 
     public final String tool;
     /** Target note path (for every tool except REMINDER and ASK, which are resolved by the executor). */
@@ -27,6 +39,7 @@ public final class SortAction {
     public String remindAt = "";
     public String question = "";
     public final List<String> options = new ArrayList<>();
+    public final List<Block> blocks = new ArrayList<>();
 
     public SortAction(String tool) {
         this.tool = tool;
@@ -51,10 +64,7 @@ public final class SortAction {
                 s.markdown = req(a, "markdown");
                 break;
             case DAILY:
-                s.date = req(a, "date").trim();
-                if (!s.date.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                    throw new JSONException("bad date " + s.date);
-                }
+                s.date = date(req(a, "date"));
                 s.heading = oneLine(a.optString("section", ""));
                 s.markdown = req(a, "markdown");
                 break;
@@ -76,6 +86,34 @@ public final class SortAction {
                     }
                 }
                 break;
+            case PLAN:
+                s.date = date(req(a, "date"));
+                s.markdown = a.optString("notes", "").trim();
+                JSONArray b = a.optJSONArray("blocks");
+                if (b == null || b.length() == 0) {
+                    throw new JSONException("missing blocks");
+                }
+                for (int i = 0; i < b.length(); i++) {
+                    JSONObject bo = b.optJSONObject(i);
+                    if (bo == null) {
+                        continue;
+                    }
+                    Block k = new Block();
+                    k.title = oneLine(bo.optString("title", ""));
+                    k.start = time(bo.optString("start", ""));
+                    k.end = bo.optString("end", "").trim().isEmpty() ? "" : time(bo.optString("end"));
+                    k.alarm = bo.optBoolean("alarm", true);
+                    if (k.title.isEmpty()) {
+                        throw new JSONException("block without title");
+                    }
+                    s.blocks.add(k);
+                }
+                break;
+            case CHECK:
+                s.title = oneLine(req(a, "task"));
+                String d = a.optString("date", "").trim();
+                s.date = d.isEmpty() ? "" : date(d);
+                break;
             default:
                 throw new JSONException("unknown tool " + name);
         }
@@ -93,6 +131,12 @@ public final class SortAction {
         o.put("remindAt", remindAt);
         o.put("question", question);
         o.put("options", new JSONArray(options));
+        JSONArray b = new JSONArray();
+        for (Block k : blocks) {
+            b.put(new JSONObject().put("start", k.start).put("end", k.end).put("title", k.title)
+                    .put("alarm", k.alarm));
+        }
+        o.put("blocks", b);
         return o;
     }
 
@@ -109,6 +153,19 @@ public final class SortAction {
         if (opts != null) {
             for (int i = 0; i < opts.length(); i++) {
                 s.options.add(opts.optString(i));
+            }
+        }
+        JSONArray b = o.optJSONArray("blocks");
+        if (b != null) {
+            for (int i = 0; i < b.length(); i++) {
+                JSONObject x = b.optJSONObject(i);
+                if (x == null) continue;
+                Block k = new Block();
+                k.start = x.optString("start", "");
+                k.end = x.optString("end", "");
+                k.title = x.optString("title", "");
+                k.alarm = x.optBoolean("alarm", true);
+                s.blocks.add(k);
             }
         }
         return s;
@@ -137,6 +194,29 @@ public final class SortAction {
             throw new JSONException("missing " + key);
         }
         return v;
+    }
+
+    private static String date(String v) throws JSONException {
+        String d = v.trim();
+        try {
+            java.time.LocalDate.parse(d);
+        } catch (RuntimeException e) {
+            throw new JSONException("bad date " + d);
+        }
+        return d;
+    }
+
+    /** "9:00", "09:00" or "21:30" → "HH:mm". */
+    static String time(String v) throws JSONException {
+        String t = v == null ? "" : v.trim();
+        if (!t.matches("\\d{1,2}:\\d{2}")) {
+            throw new JSONException("bad time " + t);
+        }
+        try {
+            return java.time.LocalTime.parse(t.length() == 4 ? "0" + t : t).toString();
+        } catch (RuntimeException e) {
+            throw new JSONException("bad time " + t);
+        }
     }
 
     static String oneLine(String s) {

@@ -110,7 +110,12 @@ public final class CaptureScheduler {
                 if (sync.route(log, now, acct.isReady())) {
                     enqueueReminders(context, id);
                 }
-                store.writeText(id, SortWorker.ACTIONS, log.serialize());
+                // Write only if a route was decided here, so we never overwrite a task id that
+                // ReminderWorker saved meanwhile.
+                String after = log.serialize();
+                if (!after.equals(com.ysulab.yapper.sort.ActionLog.parse(json).serialize())) {
+                    store.writeText(id, SortWorker.ACTIONS, after);
+                }
             } catch (Exception e) {
                 // one broken bundle must not block the others
             }

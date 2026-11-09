@@ -34,6 +34,9 @@ jobs:
       - name: Unit tests
         run: ./gradlew --no-daemon testDebugUnitTest
 
+      - name: Benchmark scorer tests
+        run: python3 -m unittest discover -s tools/transcribe-bench -v
+
       - name: Decode signing key
         if: env.HAS_KEYSTORE == 'true'
         env:

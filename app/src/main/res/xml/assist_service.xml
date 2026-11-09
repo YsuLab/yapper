@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Registers Yapper as a digital assistant. The recognition service stub is required, or Android
+     may not list the app in the "Digital assistant app" picker. -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:recognitionService="com.ysulab.yapper.assist.StubRecognitionService"
+    android:sessionService="com.ysulab.yapper.assist.YapperSessionService"
+    android:settingsActivity="com.ysulab.yapper.MainActivity"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />

@@ -20,3 +20,4 @@ captures/
 *.b64
 keystore.properties
 secrets.properties
+__pycache__/

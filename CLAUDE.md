@@ -9,6 +9,15 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - minSdk 29, compile/target SDK 36, Java 17. AGP and Gradle versions live in `build.gradle.kts` and the wrapper.
 - Unit tests: JUnit 4 in `app/src/test`. Keep logic in plain Java classes so it is testable without Android.
 
+## Code map
+- `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`.
+- `capture/` — pure Java: `CaptureStore`/`CaptureMeta` (bundles), `SilenceDetector`, `ScreenText`, `ScreenshotCheck`.
+- `work/` — WorkManager: `InboxWorker` (vault note, offline), `TranscribeWorker` (network), `CaptureScheduler.reconcile`.
+- `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java).
+- `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
+- `settings/` — `Settings`, `SecretStore` (Android Keystore).
+- `tools/transcribe-bench/score.py` — CER/WER per transcriber from Inbox notes (`python3 -m unittest` in CI).
+
 ## Build
 - `./gradlew testDebugUnitTest` — unit tests.
 - `./gradlew assembleDebug` — debug APK.

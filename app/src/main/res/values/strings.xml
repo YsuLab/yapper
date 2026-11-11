@@ -5,7 +5,7 @@
 
     <!-- Capture overlay -->
     <string name="capture_listening">listening</string>
-    <string name="capture_hint">pause or tap to finish</string>
+    <string name="capture_hint">pause, or tap here to finish</string>
     <string name="capture_got_it">saved</string>
     <string name="capture_got_it_hint">filing it now</string>
     <string name="capture_no_mic">screen saved · no mic</string>

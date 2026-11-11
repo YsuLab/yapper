@@ -9,12 +9,15 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.service.voice.VoiceInteractionSession;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.TextView;
 import com.ysulab.yapper.R;
 import com.ysulab.yapper.YapId;
@@ -75,6 +78,7 @@ public class CaptureSession extends VoiceInteractionSession {
     private View dot;
     private DitherView field;
     private long startedAt;
+    private PowerManager.WakeLock screenLock;
 
     public CaptureSession(Context context) {
         super(context);
@@ -93,7 +97,8 @@ public class CaptureSession extends VoiceInteractionSession {
         scene.moonR = 0.09f;
         scene.quietTop = 0.11f;
         scene.quietBottom = 0.11f;
-        v.setOnClickListener(x -> stop("tap"));
+        // Only a tap on the sheet itself ends the capture; a stray touch on the dimmed top part does nothing.
+        v.findViewById(R.id.capture_sheet).setOnClickListener(x -> stop("tap"));
         return v;
     }
 
@@ -116,6 +121,7 @@ public class CaptureSession extends VoiceInteractionSession {
         id = YapId.generate(Instant.now(), new SecureRandom());
         setText(R.string.capture_listening, R.string.capture_hint);
         startedAt = SystemClock.elapsedRealtime();
+        keepScreenOn(true);
         if (timer != null) {
             timer.setText(clock(0));
         }
@@ -273,12 +279,46 @@ public class CaptureSession extends VoiceInteractionSession {
         return out;
     }
 
+    /**
+     * Keeps the screen on while the owner talks, unlocked or on the lock screen. If the screen went off,
+     * Android would hide the session and end the capture early. Two layers: the window flag, and a screen
+     * wake lock (with a time limit) for the lock screen, whose own timeout is short.
+     */
+    @SuppressWarnings("deprecation")
+    private void keepScreenOn(boolean on) {
+        Window w = getWindow() != null ? getWindow().getWindow() : null;
+        if (w != null) {
+            if (on) {
+                w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                w.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        }
+        try {
+            if (on) {
+                if (screenLock == null) {
+                    PowerManager pm = getContext().getSystemService(PowerManager.class);
+                    screenLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                            | PowerManager.ON_AFTER_RELEASE, "yapper:capture");
+                    screenLock.setReferenceCounted(false);
+                }
+                long limit = (settings != null ? settings.maxCaptureMs() : 5 * 60_000L) + 10_000L;
+                screenLock.acquire(limit);
+            } else if (screenLock != null && screenLock.isHeld()) {
+                screenLock.release();
+            }
+        } catch (RuntimeException ignored) {
+            // without the lock the window flag still helps while unlocked
+        }
+    }
+
     /** Ends the capture. Safe to call more than once. */
     private void stop(String reason) {
         if (finished || id == null) {
             return;
         }
         finished = true;
+        keepScreenOn(false);
         main.removeCallbacks(poll);
         long duration = audio != null ? audio.stop() : 0;
         long speech = detector != null ? detector.speechMs() : 0;
@@ -316,6 +356,7 @@ public class CaptureSession extends VoiceInteractionSession {
     @Override
     public void onDestroy() {
         stop("hidden");
+        keepScreenOn(false);
         main.removeCallbacksAndMessages(null);
         super.onDestroy();
     }

@@ -271,6 +271,7 @@ public final class RambleService extends Service {
         switch (mode) {
             case "plan": title = R.string.ramble_title_plan; break;
             case "debrief": title = R.string.ramble_title_debrief; break;
+            case "review": title = R.string.ramble_title_review; break;
             default: title = R.string.ramble_title; break;
         }
         Notification.Builder b = new Notification.Builder(this, CHANNEL)

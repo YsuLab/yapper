@@ -85,6 +85,9 @@ public final class Executor {
                 case SortAction.ENTITY:
                     entity(log, a, marker);
                     break;
+                case SortAction.REVIEW:
+                    review(log, a, marker);
+                    break;
                 default:
                     break;
             }
@@ -183,6 +186,42 @@ public final class Executor {
             sb.append(" [[").append(captureNote).append("|🎙]]");
         }
         return sb.toString();
+    }
+
+    static final String REFLECTION_SECTION = "Reflection";
+
+    /**
+     * Weekly review: his reflection under "## Reflection" in the week's note (the week a review on
+     * this day is about, see {@link com.ysulab.yapper.review.WeekRange#forReview}). The "Focus for next
+     * week" lines are tasks, and next week's note shows them again.
+     */
+    private void review(ActionLog log, SortAction a, String marker) throws IOException {
+        a.path = com.ysulab.yapper.review.WeekRange.forReview(now.toLocalDate()).notePath();
+        write(log, a.tool, a.path, REFLECTION_SECTION, reviewMarkdown(a), marker, false, null);
+    }
+
+    static String reviewMarkdown(SortAction a) {
+        StringBuilder sb = new StringBuilder();
+        if (!a.summary.isEmpty()) {
+            sb.append("**In short:** ").append(a.summary).append("\n");
+        }
+        section(sb, "✅ What went well", a.wentWell, "- ");
+        section(sb, "🔧 What could be better", a.better, "- ");
+        section(sb, "🎯 " + com.ysulab.yapper.review.WeekDigest.FOCUS_HEADING, a.focus, "- [ ] ");
+        if (!a.markdown.isEmpty()) {
+            sb.append(sb.length() == 0 ? "" : "\n").append(a.markdown.trim()).append('\n');
+        }
+        return sb.toString();
+    }
+
+    private static void section(StringBuilder sb, String title, List<String> items, String box) {
+        if (items.isEmpty()) {
+            return;
+        }
+        sb.append(sb.length() == 0 ? "" : "\n").append("### ").append(title).append('\n');
+        for (String i : items) {
+            sb.append(box).append(i).append('\n');
+        }
     }
 
     private void reminder(ActionLog log, SortAction a, String marker) throws IOException {
@@ -293,7 +332,7 @@ public final class Executor {
     }
 
     /** Lower case, no times ("09:00–10:30", "⏰ 17:00"), no punctuation, single spaces. */
-    static String normTask(String s) {
+    public static String normTask(String s) {
         return s.toLowerCase(Locale.ROOT)
                 .replaceAll("⏰", " ")
                 .replaceAll("\\d{1,2}:\\d{2}\\s*([–-]\\s*\\d{1,2}:\\d{2})?", " ")

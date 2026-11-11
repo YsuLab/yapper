@@ -15,6 +15,9 @@ public final class SorterInput {
     public String index = "";
     public String dailyPath = "";
     public String daily = "";
-    /** "" (quick capture), "ramble", "plan" or "debrief" (M4/M5). */
+    /** "" (quick capture), "ramble", "plan", "debrief" or "review" (M4/M5). */
     public String mode = "";
+    /** Review mode: the week's note path and its auto-built summary (what he did this week). */
+    public String weeklyPath = "";
+    public String weekly = "";
 }

@@ -20,6 +20,8 @@ public final class SortAction {
     public static final String CHECK = "complete_task";
     /** Second brain: keep a note per person/project/tool/place he mentions, with facts and links. */
     public static final String ENTITY = "link_entity";
+    /** Weekly review: his reflection → "## Reflection" in this week's Weekly/ note. */
+    public static final String REVIEW = "weekly_review";
 
     /** One plan_day time block. */
     public static final class Block {
@@ -50,6 +52,12 @@ public final class SortAction {
     public final List<String> aliases = new ArrayList<>();
     /** link_entity: names of related entities or notes to link to. */
     public final List<String> related = new ArrayList<>();
+    /** weekly_review: what went well. */
+    public final List<String> wentWell = new ArrayList<>();
+    /** weekly_review: what could be better. */
+    public final List<String> better = new ArrayList<>();
+    /** weekly_review: focus for next week (become "- [ ]" lines). */
+    public final List<String> focus = new ArrayList<>();
 
     public SortAction(String tool) {
         this.tool = tool;
@@ -139,6 +147,17 @@ public final class SortAction {
                 names(a.optJSONArray("aliases"), s.aliases, s.title);
                 names(a.optJSONArray("related"), s.related, s.title);
                 break;
+            case REVIEW:
+                s.summary = a.optString("summary", "").trim();
+                lines(a.optJSONArray("went_well"), s.wentWell);
+                lines(a.optJSONArray("could_be_better"), s.better);
+                lines(a.optJSONArray("focus_next_week"), s.focus);
+                s.markdown = a.optString("notes", "").trim();
+                if (s.summary.isEmpty() && s.wentWell.isEmpty() && s.better.isEmpty() && s.focus.isEmpty()
+                        && s.markdown.isEmpty()) {
+                    throw new JSONException("empty review");
+                }
+                break;
             default:
                 throw new JSONException("unknown tool " + name);
         }
@@ -167,6 +186,12 @@ public final class SortAction {
             o.put("summary", summary);
             o.put("aliases", new JSONArray(aliases));
             o.put("related", new JSONArray(related));
+        }
+        if (REVIEW.equals(tool)) {
+            o.put("summary", summary);
+            o.put("wentWell", new JSONArray(wentWell));
+            o.put("better", new JSONArray(better));
+            o.put("focus", new JSONArray(focus));
         }
         return o;
     }
@@ -203,6 +228,9 @@ public final class SortAction {
         s.summary = o.optString("summary", "");
         strings(o.optJSONArray("aliases"), s.aliases);
         strings(o.optJSONArray("related"), s.related);
+        strings(o.optJSONArray("wentWell"), s.wentWell);
+        strings(o.optJSONArray("better"), s.better);
+        strings(o.optJSONArray("focus"), s.focus);
         return s;
     }
 
@@ -225,6 +253,19 @@ public final class SortAction {
                 return "Uni";
             default:
                 return "Topics";
+        }
+    }
+
+    /** Non-empty one-line items, without a leading "- " or "- [ ] " (the executor adds those). */
+    private static void lines(JSONArray a, List<String> out) {
+        if (a == null) {
+            return;
+        }
+        for (int i = 0; i < a.length() && out.size() < 15; i++) {
+            String t = oneLine(a.optString(i, "")).replaceFirst("^-\\s*(\\[[ xX]\\]\\s*)?", "").trim();
+            if (!t.isEmpty()) {
+                out.add(t);
+            }
         }
     }
 

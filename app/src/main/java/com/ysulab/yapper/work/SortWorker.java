@@ -231,6 +231,14 @@ public final class SortWorker extends Worker {
         String rules = fs.read(VaultIndex.RULES_PATH);
         in.rules = rules == null ? "" : rules;
         in.index = fs.buildIndex(new File(ctx.getFilesDir(), "index-cache.json"));
+        if ("review".equals(m.mode)) {
+            // Weekly review: the auto-built week summary is what he reflects on.
+            com.ysulab.yapper.review.WeekRange week =
+                    com.ysulab.yapper.review.WeekRange.forReview(captured.toLocalDate());
+            in.weeklyPath = week.notePath();
+            in.weekly = com.ysulab.yapper.review.WeekDigest.prepare(fs, week, captured.getZone(),
+                    WeeklyWorker.stateDir(ctx)).markdown;
+        }
         String date = captured.toLocalDate().toString();
         in.dailyPath = Executor.dailyPath(date);
         String daily = fs.read(in.dailyPath);

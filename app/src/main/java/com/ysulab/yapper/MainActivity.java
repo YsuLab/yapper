@@ -54,6 +54,7 @@ public class MainActivity extends Activity {
     private EditText alarmWindow;
     private EditText nudgeMorning;
     private EditText nudgeEvening;
+    private EditText nudgeReview;
     private com.ysulab.yapper.reminders.MsAccount ms;
 
     private static final class Slot {
@@ -116,6 +117,10 @@ public class MainActivity extends Activity {
         ((Button) findViewById(R.id.btn_ramble)).setOnClickListener(v -> ramble("ramble"));
         ((Button) findViewById(R.id.btn_plan)).setOnClickListener(v -> ramble("plan"));
         ((Button) findViewById(R.id.btn_debrief)).setOnClickListener(v -> ramble("debrief"));
+        ((Button) findViewById(R.id.btn_review)).setOnClickListener(v -> {
+            com.ysulab.yapper.work.WeeklyWorker.enqueue(this);
+            Toast.makeText(this, R.string.review_building, Toast.LENGTH_SHORT).show();
+        });
 
         // M3: Microsoft To Do
         ms = new com.ysulab.yapper.reminders.MsAccount(this);
@@ -142,6 +147,8 @@ public class MainActivity extends Activity {
         nudgeEvening = findViewById(R.id.nudge_evening);
         nudgeMorning.setText(hhmm(settings.morningNudgeMin()));
         nudgeEvening.setText(hhmm(settings.eveningNudgeMin()));
+        nudgeReview = findViewById(R.id.nudge_review);
+        nudgeReview.setText(hhmm(settings.reviewNudgeMin()));
         com.ysulab.yapper.today.Nudges.scheduleAll(this);
     }
 
@@ -276,6 +283,7 @@ public class MainActivity extends Activity {
         }
         settings.setNudges(parseHhmm(nudgeMorning.getText().toString(), settings.morningNudgeMin()),
                 parseHhmm(nudgeEvening.getText().toString(), settings.eveningNudgeMin()));
+        settings.setReviewNudge(parseHhmm(nudgeReview.getText().toString(), settings.reviewNudgeMin()));
         com.ysulab.yapper.today.Nudges.scheduleAll(this);
         try {
             settings.setSilenceMs(Math.round(Double.parseDouble(silence.getText().toString().trim()) * 1000));

@@ -40,7 +40,7 @@ public final class CaptureMeta {
      * capture, which has only {@link #audioFile}. Use {@link #parts()}.
      */
     public final List<String> audioParts = new ArrayList<>();
-    /** "" (quick capture), "ramble", "plan" (morning plan) or "debrief" (evening). */
+    /** "" (quick capture), "ramble", "plan" (morning plan), "debrief" (evening) or "review" (weekly). */
     public String mode = "";
     public long durationMs;
     public long speechMs;

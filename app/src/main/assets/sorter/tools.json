@@ -260,5 +260,49 @@
         ]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "weekly_review",
+      "description": "Weekly review mode only: save his reflection on the week into this week's Weekly/ note. Call once.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "2-3 sentences: how the week went, in his words and language"
+          },
+          "went_well": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What went well, one short item each"
+          },
+          "could_be_better": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What could have gone better, one short item each, with the reason if he gave one"
+          },
+          "focus_next_week": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Concrete things to do or change next week, one each (become tasks)"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Anything else he said about the week, as markdown, optional"
+          }
+        },
+        "required": [
+          "summary"
+        ]
+      }
+    }
   }
 ]

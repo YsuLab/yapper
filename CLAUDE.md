@@ -19,6 +19,8 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
   `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
   `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
+- `review/` — weekly review, pure Java: `WeekRange` (Sun–Sat, `Weekly/YYYY-Www.md`), `WeekDigest` (week summary
+  from the vault). `work/WeeklyWorker` builds it Saturday and asks for a reflection (`weekly_review` tool).
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `tools/transcribe-bench/score.py` — CER/WER per transcriber from Inbox notes (`python3 -m unittest` in CI).

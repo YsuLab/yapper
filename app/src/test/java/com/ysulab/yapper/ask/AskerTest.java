@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -38,19 +39,23 @@ public class AskerTest {
 
         @Override
         public JsonHttp.Response post(String json) throws IOException {
-            requests.add(new JSONObject(json));
+            try {
+                requests.add(new JSONObject(json));
+            } catch (JSONException e) { // checked on Android's org.json
+                throw new IOException(e);
+            }
             if (replies.isEmpty()) throw new IOException("no more replies");
             return replies.poll();
         }
     }
 
-    private static String text(String content) {
+    private static String text(String content) throws JSONException {
         return new JSONObject().put("model", "anthropic/claude-sonnet-5.5").put("choices", new JSONArray().put(
                 new JSONObject().put("message", new JSONObject().put("role", "assistant").put("content", content))))
                 .toString();
     }
 
-    private static String toolCall(String name, JSONObject args) {
+    private static String toolCall(String name, JSONObject args) throws JSONException {
         JSONObject call = new JSONObject().put("id", "call_1").put("type", "function")
                 .put("function", new JSONObject().put("name", name).put("arguments", args.toString()));
         return new JSONObject().put("choices", new JSONArray().put(new JSONObject().put("message",
@@ -156,7 +161,7 @@ public class AskerTest {
     }
 
     @Test
-    public void badToolArgumentsDoNotCrash() {
+    public void badToolArgumentsDoNotCrash() throws Exception {
         Asker asker = new Asker(new SorterConfig(), "x", search(), NOW, null);
         Asker.Answer a = new Asker.Answer();
         assertTrue(asker.runTool(new JSONObject().put("name", "search_vault").put("arguments", "{oops"), a)

@@ -1,11 +1,23 @@
 # Owner setup guide
 
-Things only you can do. Claude never sees the keystore or its password.
+Things only you can do. Secrets live in GitHub secrets and the private project files, never in this repo.
 
-## A. Signing key (once, ~10 min)
+## A. Signing key (once, ~3 min)
 
 Every APK must be signed with the **same** key, or Android refuses to install it over the previous one.
-You create that key once, keep it safe, and give it to GitHub as secrets.
+
+### Quick path (key already made for you)
+Claude generated the keystore on 2026-11-11 and put it in the **private** project files folder
+`release/signing/` (never in this repo). The README there lists the four exact values.
+
+1. Back up `yapper-release.jks` and the README (password manager or encrypted drive). Lose it and the next
+   APK can't update the installed app.
+2. Repo → **Settings → Secrets and variables → Actions → New repository secret**, four times:
+   `YAPPER_KEYSTORE_BASE64`, `YAPPER_KEYSTORE_PASSWORD`, `YAPPER_KEY_ALIAS`, `YAPPER_KEY_PASSWORD`.
+3. Check: the next CI run's summary shows "Signed with release key" with a SHA-256 starting `2F:AE:A8:2F`.
+4. Uninstall the old (debug-signed) Yapper **once**, install the new APK. From then on, every APK updates in place.
+
+### Make your own key instead (optional)
 
 ### 1. Get `keytool`
 It ships with any JDK. Pick one:

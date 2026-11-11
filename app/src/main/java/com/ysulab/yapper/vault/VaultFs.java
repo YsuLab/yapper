@@ -26,6 +26,14 @@ public interface VaultFs {
     /** Undo only: delete a file we created and nobody changed since. */
     void delete(String path) throws IOException;
 
+    /**
+     * Every markdown file (dot-folders skipped) with its last-modified time in epoch ms (0 if unknown).
+     * Used by the weekly review to read only what changed this week.
+     */
+    default java.util.Map<String, Long> listNotes() throws IOException {
+        return java.util.Collections.emptyMap();
+    }
+
     /** Moves a file (our own capture notes and attachments only). No-op if {@code from} is missing. */
     void move(String from, String to) throws IOException;
 }

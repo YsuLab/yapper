@@ -39,6 +39,20 @@ public final class MemoryVaultFs implements VaultFs {
         files.remove(path);
     }
 
+    /** Last-modified times for {@link #listNotes()}; files not listed here count as changed now. */
+    public final java.util.Map<String, Long> modified = new java.util.HashMap<>();
+
+    @Override
+    public java.util.Map<String, Long> listNotes() {
+        java.util.Map<String, Long> out = new java.util.TreeMap<>();
+        for (String p : files.keySet()) {
+            if (p.endsWith(".md")) {
+                out.put(p, modified.getOrDefault(p, Long.MAX_VALUE));
+            }
+        }
+        return out;
+    }
+
     @Override
     public void move(String from, String to) throws IOException {
         String v = files.remove(from);

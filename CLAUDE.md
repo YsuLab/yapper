@@ -10,17 +10,27 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - Unit tests: JUnit 4 in `app/src/test`. Keep logic in plain Java classes so it is testable without Android.
 
 ## Code map
-- `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`.
+- `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`;
+  `ShareActivity` (share target: copies shared text/files into a "share" bundle + optional voice note; `capture/SharedItems`).
 - `capture/` — pure Java: `CaptureStore`/`CaptureMeta` (bundles), `SilenceDetector`, `ScreenText`, `ScreenshotCheck`.
 - `work/` — WorkManager: `InboxWorker` (vault note, offline), `TranscribeWorker` (network), `CaptureScheduler.reconcile`.
 - `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java), `VaultFs` (path API;
-  `SafVaultFs` on the phone, `MemoryVaultFs` in tests), `VaultIndex` (`_yapper/index.md`).
-- `sort/` — M2 sorter, pure Java: `Sorter` (OpenAI-compatible `/chat/completions` + tool calls), `SorterPrompt`,
+  `SafVaultFs` on the phone, `MemoryVaultFs` in tests), `VaultIndex` (`_yapper/index.md`), `SyncSafety`
+  (appends read back + retried under Syncthing; conflict copies → `_yapper/sync-conflicts.md`).
+- `sort/` — M2 sorter, pure Java (+ second brain: `link_entity` → entity notes via `vault/EntityIndex`): `Sorter` (OpenAI-compatible `/chat/completions` + tool calls), `SorterPrompt`,
   `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
   `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
+- `prayer/` — `PrayerTimes`: Umm al-Qura prayer times for Jeddah, computed locally; its 8-day table goes into the
+  sorter prompt so "after Asr" resolves to a clock time.
+- `review/` — weekly review, pure Java: `WeekRange` (Sun–Sat, `Weekly/YYYY-Www.md`), `WeekDigest` (week summary
+  from the vault). `work/WeeklyWorker` builds it Saturday and asks for a reflection (`weekly_review` tool).
+- `ask/` — ask your vault, pure Java: `VaultSearch` (keyword + alias + date search over notes), `Asker` (≤ 3 model
+  calls with `search_vault`/`read_note`), `AnswerBlock`. Prompt in `assets/ask/system.md`. `work/AnswerWorker` runs it
+  for each `ask_vault` action and posts the answer notification.
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
+- `server/syncthing/` — VPS sync hub (docker-compose, ignore list). Guide: `docs/vault-sync.md`.
 - `tools/transcribe-bench/score.py` — CER/WER per transcriber from Inbox notes (`python3 -m unittest` in CI).
 - `tools/sorter-eval/run_eval.py` + `evals/cases.jsonl` — routing eval against any model (bar ≥ 90 %).
 

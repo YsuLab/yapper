@@ -2,6 +2,97 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-11 — Vault sync through the VPS
+- **Syncthing (Docker, `syncthing/syncthing:2`) on the VPS as the always-on hub**, Syncthing-Fork on phone and
+  tablet, Syncthing on the PC. Confirms the M1 recommendation. Not self-hosted LiveSync/CouchDB: it only syncs
+  while Obsidian runs, so Yapper's background writes would wait; it also adds a database to run. Owner prefers
+  the VPS for data.
+- **Web UI bound to 127.0.0.1, reached by SSH tunnel.** Only 22000 tcp/udp is open. Smallest attack surface.
+- **Staggered versioning (365 days) on the VPS only.** One place holds every overwritten version.
+- **Ignore `.obsidian/workspace*.json` and `.trash`.** Per-device layout files conflict on every switch.
+- **Every vault append is read back and retried (max 3) if the block is missing** (`SyncSafety.appendVerified`).
+  Syncthing replaces files by temp-file + rename, so an append racing a sync can land in the orphaned old file.
+  Blocks are unique (`%%yap%%` marker / timed heading), so "present" means "written" and a retry can't double.
+  After 3 misses the worker fails and WorkManager retries; the capture bundle stays.
+- **Syncthing conflict copies are skipped by the index and listed in `_yapper/sync-conflicts.md`** (our own file,
+  rewritten only when the list changes). The sorter never files into a copy, and a Yapper block that ended up in
+  a copy is one tap away. Yapper never merges or deletes copies itself (would mean rewriting owner text).
+
+## 2026-11-11 — Prayer-time reminders
+- **Computed on the phone, Umm al-Qura method, Jeddah.** Fajr 18.5°, Asr standard (shadow 1), Isha = Maghrib +
+  90 min (120 in Ramadan, Ramadan read from `java.time.chrono.HijrahDate`, which is the Umm al-Qura calendar).
+  No network and no library: the USNO low-precision sun formulas fit in one pure-Java class (`prayer/PrayerTimes`)
+  and match the published Jeddah table to ±1 minute. Coordinates fixed to Jeddah for now; a location setting can
+  come later if he travels.
+- **The sorter resolves the time, not the app.** The system prompt gets an 8-day table (today + a week, Friday
+  Dhuhr marked Jumuah) and resolution rules. The model already handles "tomorrow", "next Friday" and Arabic
+  phrasing, so it picks the day and the prayer and writes a normal `remind_at`. No new tool, nothing else changes
+  in reminders, To Do sync or alarms. Replaces the old "after Asr → ask_owner" rule.
+- **Offsets: "after X" = X + 30 min, "before X" = X − 15 min, "after Jumuah" = Dhuhr + 45 min, "between Maghrib
+  and Isha" = Maghrib + 30.** "After Asr" means after he has prayed: adhan, about 20 minutes to iqama, then the
+  prayer. A rule in `_yapper/rules.md` overrides these (the rules note wins over the prompt).
+- **Eval uses a fixed copy of the app's table** (`evals/prayer-times.md`) instead of a Python port, so there is
+  one implementation of the astronomy.
+
+## 2026-11-11 — Share to Yapper
+- **Android share target (`ShareActivity`) for text, images, PDFs and any file, one or many.** WhatsApp sends
+  text as `ACTION_SEND` text/plain and mixed selections as `ACTION_SEND_MULTIPLE` */*. Owner gets timetables
+  and tasks through WhatsApp and wanted them in without the side key.
+- **Same sheet as the side key, mic already listening.** Zero extra taps for a voice note ("this is the new
+  timetable, remind me before each quiz"). Silence, no speech (6 s), a tap or Back ends it. Back means "done",
+  not "cancel": the share is saved the moment it arrives.
+- **Copy first, then everything else.** Files are streamed into the capture bundle (`shared-01.jpg` …,
+  `shared.txt`) before the job is queued, and the activity stays open until the copy ends, because the read
+  grant on a shared `content://` URI ends with the receiving activity. Limits: 10 files, 25 MB each; the rest
+  is counted and noted in the Inbox note, not silently dropped. Only `content://` URIs are read.
+- **No speech → audio is not transcribed.** The file stays in the bundle, but a transcriber would invent text
+  from silence. A share without a voice note skips transcription and goes straight to the sorter.
+- **Sorter gets the shared content, not the screen.** Shared text, vault file names (so the note it writes can
+  embed the original with `![[name]]`), up to 4 images at ≤1600 px (timetables need small print; screenshots
+  stay at 720 px), and one PDF ≤5 MB as an OpenRouter `file` part. PDFs only go to OpenRouter, which reads them
+  for any model; other OpenAI-compatible servers would reject the part. Shared images are sent regardless of
+  the "screenshots" setting: the owner chose to share them.
+- **Recurring weekly timetables are typed out as a table, not one reminder per slot**, unless the voice note
+  asks for reminders. One-off dated items (exam, deadline, moved lecture) do become reminders.
+
+## 2026-11-11 — Weekly review (Saturday)
+- **Week = Sunday to Saturday** (Saudi week). Note path `Weekly/YYYY-Www.md` with Sunday-start week numbers
+  (week 1 holds 1 January), title "Week 46 · 8–14 Nov 2026". Owner reflects on Saturdays.
+- **Saturday nudge, default 10:00, configurable/off** in Settings (Daily nudges section). It first builds the
+  week's note, then notifies "Your week W46 is ready · 12 done · 5 open · …" with View (Obsidian) and Reflect.
+  Also a "Weekly review" button in the app for any day.
+- **The week summary is built by the app, not an LLM** (`review/WeekDigest`): offline, free, no invented facts.
+  Sources: daily notes (done/open tasks, deduped across roll-overs; Debrief lines), lines under this week's
+  dated headings in any note (Yapper's appends and entity logs), notes Yapper created this week (marker ids
+  carry the date), capture count, open ❓ questions in `Inbox.md`, and last week's "Focus for next week".
+  Only notes modified since Sunday are read.
+- **Reflection = ramble in mode `review` → new sorter tool `weekly_review`** (summary, went_well,
+  could_be_better, focus_next_week, notes). Written under `## Reflection` in the week's note; focus items are
+  `- [ ]` tasks and show up again at the top of next week's note ("Last week's focus"), closing the loop.
+  The sorter sees the week summary so it can resolve "that GCP thing" and link notes.
+- **Late review:** a review made on Sunday or Monday is about the week that just ended; Tuesday to Saturday it
+  is the current week (`WeekRange.forReview`).
+- **Refresh without rewriting owner text:** the app remembers (app storage) what it last wrote to the week's
+  note. If the note is still exactly that, a later build replaces it with a fresh one (so a Saturday-night
+  review sees the whole week). Once the owner or a reflection changed it, it is never rewritten.
+
+## 2026-11-11 — Second brain (entity notes + links)
+- **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
+  person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"
+  notes that build themselves, with note-to-note links (e.g. GCP ↔ Tabby).
+- **The app, not the model, decides "existing or new".** `EntityIndex` reads names, titles and aliases from
+  `_yapper/index.md` (case-insensitive, Arabic diacritics ignored), so "gcp" lands in `Topics/Google Cloud.md` if
+  that note has the alias. Avoids duplicate notes, which the model alone produces easily.
+- **New entity note** = frontmatter (`aliases`, `type`, `tags: entity`), `# Name`, one-line summary, `## Related`
+  links, `## Log` with a dated fact. **Existing note** = one appended dated line: fact · related links · 🎙 link
+  back to the capture. Append/create only; frontmatter of existing notes is never touched.
+- **Default folders when rules/index give no home:** People/, Projects/, Uni/ (courses), Topics/ (everything
+  else). The owner's `rules.md` wins; the starter rules now document this.
+- **Dense linking in every block is a prompt rule** (wrap entity names in `[[ ]]`), not a regex auto-linker:
+  a regex would mislink partial words, code and Arabic.
+- **Undo** reuses the action log: a created entity note is deleted only if unchanged; if a later capture added to
+  it, only our exact text is removed.
+
 ## 2026-11-09 — M3–M5 (one release)
 - **M3, M4 and M5 ship as one PR and one APK.** Owner asked for a single build to test instead of one per
   milestone (reinstalls are tiring). Overrides "one milestone = one PR" for these three.
@@ -173,6 +264,24 @@ Newest first. Format: date — decision — why.
 - Sheet is 300dp (about a third of the S24 Ultra screen), full width, no box. Owner: the full-height black sheet killed the vibe.
 - The screen behind stays visible: empty cells are transparent, and a dithered dark haze rises with the smoke (none at the top, near solid under the words). The scrim is a light gradient, not 70 % black.
 - Motion: 1.8 s eased rise with uneven plumes, moonrise through the smoke, two smoke layers at different speeds for depth, voice speeds the drift. On release the smoke detaches from the bottom and drifts away over 1.2 s ("saved" shows for 1.3 s).
+
+### 2026-11-11 — Ask your vault by voice
+- **The sorter decides question vs capture.** New sorter tool `ask_vault(question, terms, since, until)`. Same side key,
+  no new mode or wake word: the sorter already reads every transcript, and one capture can mix a reminder and a
+  question. "Ask Ahmed about X" is not `ask_vault` (eval cases cover both).
+- **Local keyword search, no embeddings.** `ask/VaultSearch` splits notes into sections, dates each section from
+  `%%yap%%` markers, `### YYYY-MM-DD` headings and `Daily/` paths, folds Arabic letter variants, and widens a term to
+  every alias of its entity note (GCP ↔ Google Cloud ↔ جي سي بي). Runs on the phone over plain markdown; text cached
+  per note by modified time + size. Embeddings would need a second provider or an on-device model; keyword +
+  aliases is enough for one person's vault and adds no cost. Revisit when the home-lab GPU can serve embeddings.
+- **Two-step answer, at most 3 model calls.** Round 1 = question + local excerpts. The model may call
+  `search_vault` / `read_note` up to twice, then must answer (`tool_choice: none`, tools still declared because
+  Anthropic models reject a tool history without tools). Same OpenAI-compatible provider and model as the sorter.
+- **Answer = notification + capture note.** Notification: question as title, answer as text, tap opens the capture
+  note, "Source" opens the first cited note. The answer is appended to the capture note only (never to his notes),
+  tagged `%%yap:<id>/<n>%%`, so a retry never appends twice. `_yapper/` is not searched, so answers do not feed back.
+- **Question-only capture → no "Sorted ✓".** A quiet "Looking it up…" that the answer replaces. Answers have their
+  own channel with sound, since he is waiting.
 
 ### 2026-11-11 — Capture sheet v3: backdrop and fades (picked from a mock)
 - A 40 % dark shade behind the sheet only, as a tall gradient that starts above the sheet (no top edge). It fades in over 0.6 s and out with the smoke.

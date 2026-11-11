@@ -26,13 +26,17 @@ public final class Nudges extends BroadcastReceiver {
     static final String CHANNEL = "daily_nudge";
     static final int REQ_MORNING = 7001;
     static final int REQ_EVENING = 7002;
+    static final int REQ_REVIEW = 7003;
     static final int NOTIFY_ID = 7;
 
     public static void scheduleAll(Context context) {
         Settings s = new Settings(context);
         schedule(context, "plan", s.morningNudgeMin(), REQ_MORNING);
         schedule(context, "debrief", s.eveningNudgeMin(), REQ_EVENING);
+        schedule(context, "review", s.reviewNudgeMin(), REQ_REVIEW);
     }
+
+
 
     /** Next time {@code minuteOfDay} happens after now (in the owner's zone). Pure, for tests. */
     public static ZonedDateTime next(ZonedDateTime now, int minuteOfDay) {
@@ -49,7 +53,9 @@ public final class Nudges extends BroadcastReceiver {
         if (minuteOfDay < 0) {
             return; // off
         }
-        long at = next(ZonedDateTime.now(ZoneId.of(Settings.ZONE)), minuteOfDay).toInstant().toEpochMilli();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(Settings.ZONE));
+        long at = ("review".equals(kind) ? com.ysulab.yapper.review.WeekRange.nextSaturday(now, minuteOfDay) : next(now, minuteOfDay))
+                .toInstant().toEpochMilli();
         am.setWindow(AlarmManager.RTC_WAKEUP, at, 10 * 60_000L, pi);
     }
 
@@ -59,6 +65,12 @@ public final class Nudges extends BroadcastReceiver {
             return;
         }
         String kind = intent.getStringExtra(EXTRA_KIND);
+        if ("review".equals(kind)) {
+            // Build the week's note first (needs the vault), then WeeklyWorker posts the nudge.
+            com.ysulab.yapper.work.WeeklyWorker.enqueue(context);
+            scheduleAll(context); // next Saturday
+            return;
+        }
         boolean plan = !"debrief".equals(kind);
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel(CHANNEL,

@@ -1,0 +1,14 @@
+// Paste into each device's folder → Edit → Ignore Patterns (Syncthing does not sync this list).
+// Docs: docs/vault-sync.md
+
+// Per-device Obsidian layout (open tabs, sidebar). Syncing it causes a conflict on every device switch.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+// Obsidian's local trash: deleted notes stay on the device that deleted them.
+.trash
+
+// OS junk. (?d) lets Syncthing delete it if it blocks a folder delete.
+(?d).DS_Store
+(?d)Thumbs.db
+(?d)desktop.ini

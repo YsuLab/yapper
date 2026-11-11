@@ -60,7 +60,14 @@ public final class SafVaultFs implements VaultFs {
         if (f == null) {
             throw new IOException("Missing: " + path);
         }
-        vault.append(f, text);
+        // Read back and retry if a sync tool replaced the file mid-append (see SyncSafety).
+        SyncSafety.appendVerified(this, (p, t) -> {
+            DocumentFile now = vault.findPath(p);
+            if (now == null) {
+                throw new IOException("Missing: " + p);
+            }
+            vault.append(now, t);
+        }, path, text);
     }
 
     @Override
@@ -150,9 +157,11 @@ public final class SafVaultFs implements VaultFs {
         JSONObject next = new JSONObject();
         List<String> folders = new ArrayList<>();
         List<String> entries = new ArrayList<>();
+        List<String> conflicts = new ArrayList<>();
         Uri tree = vault.root().getUri();
         String rootId = DocumentsContract.getDocumentId(tree);
-        walk(tree, rootId, "", folders, entries, cache, next);
+        walk(tree, rootId, "", folders, entries, conflicts, cache, next);
+        writeConflictReport(conflicts);
         try {
             File tmp = new File(cacheFile.getPath() + ".tmp");
             Files.write(tmp.toPath(), next.toString().getBytes(StandardCharsets.UTF_8));
@@ -172,8 +181,32 @@ public final class SafVaultFs implements VaultFs {
         return text;
     }
 
+    /** Keeps {@code _yapper/sync-conflicts.md} current. Our own file; only written when it changes. */
+    private void writeConflictReport(List<String> conflicts) {
+        try {
+            java.util.Collections.sort(conflicts);
+            DocumentFile f = vault.findPath(SyncSafety.REPORT_PATH);
+            if (conflicts.isEmpty() && f == null) {
+                return; // nothing to report and nothing to update
+            }
+            String oldText = f == null ? "" : vault.read(f);
+            if (!oldText.isEmpty() && SyncSafety.sameConflicts(oldText, conflicts)) {
+                return;
+            }
+            String text = SyncSafety.report(conflicts,
+                    java.time.LocalDateTime.now().withNano(0).toString().replace('T', ' '));
+            if (f == null) {
+                create(SyncSafety.REPORT_PATH, text);
+            } else {
+                vault.write(f, text);
+            }
+        } catch (IOException | RuntimeException e) {
+            // the report is a convenience; never block sorting on it
+        }
+    }
+
     private void walk(Uri tree, String docId, String prefix, List<String> folders, List<String> entries,
-            JSONObject cache, JSONObject next) {
+            List<String> conflicts, JSONObject cache, JSONObject next) {
         ContentResolver cr = vault.context().getContentResolver();
         Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
         String[] cols = {
@@ -195,6 +228,10 @@ public final class SafVaultFs implements VaultFs {
                 long modified = c.isNull(3) ? 0 : c.getLong(3);
                 long size = c.isNull(4) ? 0 : c.getLong(4);
                 String path = prefix + name;
+                if (name != null && name.toLowerCase(java.util.Locale.ROOT).contains(".sync-conflict-")
+                        && !VaultIndex.hidden(path)) {
+                    conflicts.add(path);
+                }
                 if (name == null || VaultIndex.skip(path)) {
                     continue;
                 }
@@ -225,11 +262,158 @@ public final class SafVaultFs implements VaultFs {
         }
         for (Map.Entry<String, String> d : dirs.entrySet()) {
             folders.add(d.getKey());
-            walk(tree, d.getValue(), d.getKey() + "/", folders, entries, cache, next);
+            walk(tree, d.getValue(), d.getKey() + "/", folders, entries, conflicts, cache, next);
+        }
+    }
+
+    @Override
+    public Map<String, Long> listNotes() {
+        Map<String, Long> out = new java.util.TreeMap<>();
+        Uri tree = vault.root().getUri();
+        listInto(tree, DocumentsContract.getDocumentId(tree), "", out);
+        return out;
+    }
+
+    private void listInto(Uri tree, String docId, String prefix, Map<String, Long> out) {
+        ContentResolver cr = vault.context().getContentResolver();
+        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
+        String[] cols = {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        };
+        Map<String, String> dirs = new HashMap<>();
+        try (Cursor c = cr.query(children, cols, null, null, null)) {
+            if (c == null) {
+                return;
+            }
+            while (c.moveToNext() && out.size() < MAX_NOTES * 2) {
+                String name = c.getString(1);
+                if (name == null || name.startsWith(".")) {
+                    continue;
+                }
+                String path = prefix + name;
+                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(c.getString(2))) {
+                    dirs.put(path, c.getString(0));
+                } else if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".md")) {
+                    out.put(path, c.isNull(3) ? 0L : c.getLong(3));
+                }
+            }
+        } catch (RuntimeException e) {
+            return; // provider hiccup: list what we have
+        }
+        for (Map.Entry<String, String> d : dirs.entrySet()) {
+            if (!d.getKey().endsWith("/" + InboxNote.ATTACHMENTS_DIR) && !d.getKey().equals(InboxNote.ATTACHMENTS_DIR)) {
+                listInto(tree, d.getValue(), d.getKey() + "/", out);
+            }
+        }
+    }
+
+    /** Notes larger than this are cut for search (a 60-minute ramble is about 50 KB). */
+    static final int MAX_SEARCH_READ = 96 * 1024;
+
+    /** Folders "ask your vault" never searches: hidden ones and Yapper's own files. */
+    public static boolean skipForSearch(String path) {
+        String p = path.toLowerCase(java.util.Locale.ROOT);
+        for (String seg : p.split("/")) {
+            if (seg.startsWith(".")) {
+                return true;
+            }
+        }
+        return p.equals(VaultIndex.APP_DIR) || p.startsWith(VaultIndex.APP_DIR + "/");
+    }
+
+    /**
+     * Every markdown note's text (path → text) for "ask your vault". Unchanged notes come from a
+     * cache in app storage (keyed by modified time + size), so only new or edited notes are read.
+     */
+    public Map<String, String> allNotes(File cacheFile) {
+        JSONObject cache;
+        try {
+            cache = cacheFile.isFile()
+                    ? new JSONObject(new String(Files.readAllBytes(cacheFile.toPath()), StandardCharsets.UTF_8))
+                    : new JSONObject();
+        } catch (Exception e) {
+            cache = new JSONObject();
+        }
+        JSONObject next = new JSONObject();
+        Map<String, String> out = new java.util.TreeMap<>();
+        Uri tree = vault.root().getUri();
+        walkText(tree, DocumentsContract.getDocumentId(tree), "", out, cache, next);
+        try {
+            File tmp = new File(cacheFile.getPath() + ".tmp");
+            Files.write(tmp.toPath(), next.toString().getBytes(StandardCharsets.UTF_8));
+            if (!tmp.renameTo(cacheFile)) {
+                tmp.delete();
+            }
+        } catch (IOException ignored) {
+            // cache is only an optimization
+        }
+        return out;
+    }
+
+    private void walkText(Uri tree, String docId, String prefix, Map<String, String> out, JSONObject cache,
+            JSONObject next) {
+        ContentResolver cr = vault.context().getContentResolver();
+        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
+        String[] cols = {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            DocumentsContract.Document.COLUMN_SIZE
+        };
+        Map<String, String> dirs = new HashMap<>();
+        try (Cursor c = cr.query(children, cols, null, null, null)) {
+            if (c == null) {
+                return;
+            }
+            while (c.moveToNext() && out.size() < MAX_NOTES) {
+                String id = c.getString(0);
+                String name = c.getString(1);
+                String mime = c.getString(2);
+                long modified = c.isNull(3) ? 0 : c.getLong(3);
+                long size = c.isNull(4) ? 0 : c.getLong(4);
+                String path = prefix + name;
+                if (name == null || skipForSearch(path)) {
+                    continue;
+                }
+                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
+                    dirs.put(path, id);
+                    continue;
+                }
+                if (!name.toLowerCase(java.util.Locale.ROOT).endsWith(".md")) {
+                    continue;
+                }
+                String stamp = modified + ":" + size;
+                JSONObject cached = cache.optJSONObject(path);
+                String text;
+                if (cached != null && stamp.equals(cached.optString("s"))) {
+                    text = cached.optString("t");
+                } else {
+                    text = readUpTo(cr, DocumentsContract.buildDocumentUriUsingTree(tree, id), MAX_SEARCH_READ);
+                }
+                out.put(path, text);
+                try {
+                    next.put(path, new JSONObject().put("s", stamp).put("t", text));
+                } catch (Exception ignored) {
+                    // JSONException: cannot happen for strings
+                }
+            }
+        } catch (RuntimeException e) {
+            return; // provider hiccup: search what we have
+        }
+        for (Map.Entry<String, String> d : dirs.entrySet()) {
+            walkText(tree, d.getValue(), d.getKey() + "/", out, cache, next);
         }
     }
 
     private static String readHead(ContentResolver cr, Uri uri) {
+        return readUpTo(cr, uri, MAX_READ);
+    }
+
+    private static String readUpTo(ContentResolver cr, Uri uri, int max) {
         try (InputStream in = cr.openInputStream(uri)) {
             if (in == null) {
                 return "";
@@ -237,7 +421,7 @@ public final class SafVaultFs implements VaultFs {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
             int n;
-            while (bos.size() < MAX_READ && (n = in.read(buf)) > 0) {
+            while (bos.size() < max && (n = in.read(buf)) > 0) {
                 bos.write(buf, 0, n);
             }
             return bos.toString("UTF-8");

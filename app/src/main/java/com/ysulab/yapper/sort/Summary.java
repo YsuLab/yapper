@@ -23,8 +23,11 @@ public final class Summary {
         int reminders = 0;
         int daily = 0;
         int questions = 0;
+        int asked = 0;
         int blocks = 0;
         int done = 0;
+        Set<String> linked = new LinkedHashSet<>();
+        boolean review = false;
         for (SortAction a : plan) {
             switch (a.tool) {
                 case SortAction.APPEND:
@@ -46,11 +49,23 @@ public final class Summary {
                 case SortAction.CHECK:
                     done++;
                     break;
+                case SortAction.ENTITY:
+                    linked.add(a.title);
+                    break;
+                case SortAction.REVIEW:
+                    review = true;
+                    break;
+                case SortAction.ASK_VAULT:
+                    asked++;
+                    break;
                 default:
                     break;
             }
         }
         List<String> parts = new ArrayList<>();
+        if (review) {
+            parts.add("Weekly review saved");
+        }
         if (blocks > 0) {
             parts.add("Plan: " + plural(blocks, "block"));
         }
@@ -69,12 +84,47 @@ public final class Summary {
         if (questions > 0) {
             parts.add(plural(questions, "question") + " in Inbox.md");
         }
+        if (!linked.isEmpty()) {
+            parts.add("Linked " + String.join(", ", linked));
+        }
+        if (asked > 0) {
+            parts.add("Answering " + plural(asked, "question") + "…");
+        }
         return parts.isEmpty() ? "Nothing to file" : String.join(" · ", parts);
+    }
+
+    /** True when the capture was only questions to the vault: no "Sorted" notification, just answers. */
+    public static boolean onlyQuestions(List<SortAction> plan) {
+        if (plan.isEmpty()) {
+            return false;
+        }
+        for (SortAction a : plan) {
+            if (!SortAction.ASK_VAULT.equals(a.tool)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Indexes of the ask_vault actions in a plan. */
+    public static List<Integer> questionIndexes(List<SortAction> plan) {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < plan.size(); i++) {
+            if (SortAction.ASK_VAULT.equals(plan.get(i).tool)) {
+                out.add(i);
+            }
+        }
+        return out;
     }
 
     /** The first note a "View" action should open: a note we wrote to, else the daily note or Inbox.md. */
     public static String viewPath(List<SortAction> plan) {
         String fallback = null;
+        for (SortAction a : plan) {
+            if (SortAction.REVIEW.equals(a.tool) && !a.path.isEmpty()) {
+                return a.path;
+            }
+        }
         for (SortAction a : plan) {
             if (SortAction.APPEND.equals(a.tool) || SortAction.CREATE.equals(a.tool)) {
                 return a.path;
@@ -169,6 +219,12 @@ public final class Summary {
             }
             case SortAction.CHECK:
                 return "Done ✓ " + a.title;
+            case SortAction.REVIEW:
+                return "Weekly review in " + (a.path.isEmpty() ? "Weekly/" : link(a.path));
+            case SortAction.ASK_VAULT:
+                return "Asked the vault: " + oneLine(a.question);
+            case SortAction.ENTITY:
+                return "Linked " + link(a.path) + (a.markdown.isEmpty() ? "" : ": " + oneLine(a.markdown));
             default:
                 return a.tool;
         }

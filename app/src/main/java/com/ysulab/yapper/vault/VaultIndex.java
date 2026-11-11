@@ -21,13 +21,21 @@ public final class VaultIndex {
     /** Folders and files the index (and the sorter) never look at. */
     public static boolean skip(String path) {
         String p = path.toLowerCase(Locale.ROOT);
-        for (String seg : p.split("/")) {
-            if (seg.startsWith(".")) {
-                return true; // .obsidian, .trash, .git, .stfolder...
-            }
+        if (hidden(p) || SyncSafety.isSyncArtifact(p)) {
+            return true; // .obsidian, .trash, .stfolder; Syncthing conflict copies and temp files
         }
         return p.startsWith(APP_DIR + "/") || p.equals(APP_DIR)
                 || p.startsWith(InboxNote.INBOX_DIR.toLowerCase(Locale.ROOT) + "/");
+    }
+
+    /** True if any path segment starts with a dot (.obsidian, .trash, .git, .stfolder...). */
+    public static boolean hidden(String path) {
+        for (String seg : path.split("/")) {
+            if (seg.startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** One line per note, e.g. {@code - Uni/Algorithms.md · aliases: Algo · ## Exams, ## Lectures}. */

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.ysulab.yapper.prayer.PrayerTimes;
 import com.ysulab.yapper.transcribe.FakeServer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ public class SorterTest {
         in.rules = "# Yapper rules\n- Uni/ courses";
         in.index = "- Uni/Algorithms.md";
         in.dailyPath = "Daily/2026-11-09.md";
+        in.prayers = PrayerTimes.table(in.now.toLocalDate(), 8);
         return in;
     }
 
@@ -55,6 +57,8 @@ public class SorterTest {
         assertTrue(sys.contains("Monday"));
         assertTrue(sys.contains("- Uni/Algorithms.md"));
         assertTrue(sys.contains("(empty)")); // no daily note yet
+        assertTrue(sys, sys.contains("- Mon 2026-11-09: Fajr "));
+        assertTrue(sys, sys.contains("after X"));
     }
 
     @Test
@@ -63,7 +67,7 @@ public class SorterTest {
         SorterInput in = input();
         JSONObject req = SorterPrompt.request(cfg, asset("system.md"), asset("tools.json"), in);
         assertEquals("anthropic/claude-sonnet-5.5", req.getString("model"));
-        assertEquals(7, req.getJSONArray("tools").length());
+        assertEquals(10, req.getJSONArray("tools").length());
         JSONObject sys = req.getJSONArray("messages").getJSONObject(0).getJSONArray("content").getJSONObject(0);
         assertTrue(sys.has("cache_control"));
         JSONArray user = req.getJSONArray("messages").getJSONObject(1).getJSONArray("content");
@@ -158,5 +162,35 @@ public class SorterTest {
         c.apiKey = "";
         assertTrue(c.isConfigured());
         assertEquals("https://gpu.tailnet.ts.net/v1", c.url());
+    }
+
+    @Test
+    public void shareModeSendsSharedContent() throws Exception {
+        SorterConfig cfg = new SorterConfig();
+        SorterInput in = input();
+        in.mode = "share";
+        in.transcript = "";
+        in.screenText = "should not be sent in share mode";
+        in.sharedText = "جدول الاختبارات الجديد";
+        in.sharedFiles.add("id-shared-01.jpg");
+        in.sharedFiles.add("id-shared-02.pdf");
+        in.sharedImagesBase64.add("IMG1");
+        in.sharedPdfBase64 = "PDF1";
+        in.sharedPdfName = "id-shared-02.pdf";
+        String text = SorterPrompt.userText(in);
+        assertTrue(text.contains("Shared from another app"));
+        assertTrue(text.contains("(no speech)"));
+        assertTrue(text.contains("جدول الاختبارات الجديد"));
+        assertTrue(text.contains("- id-shared-01.jpg\n- id-shared-02.pdf\n"));
+        assertFalse(text.contains("should not be sent"));
+        JSONObject req = SorterPrompt.request(cfg, asset("system.md"), asset("tools.json"), in);
+        JSONArray user = req.getJSONArray("messages").getJSONObject(1).getJSONArray("content");
+        assertEquals(3, user.length());
+        assertEquals("data:image/jpeg;base64,IMG1",
+                user.getJSONObject(1).getJSONObject("image_url").getString("url"));
+        assertEquals("file", user.getJSONObject(2).getString("type"));
+        assertEquals("data:application/pdf;base64,PDF1",
+                user.getJSONObject(2).getJSONObject("file").getString("file_data"));
+        assertFalse(SorterPrompt.modeNote("share").isEmpty());
     }
 }

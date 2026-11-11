@@ -99,20 +99,10 @@ The repo is private, so you must be signed in to GitHub in the phone browser (or
 
 All four status lines at the top should show ✅ (transcribers can stay empty: notes then hold audio only).
 
-## D. Vault sync (recommended, your call)
+## D. Vault sync (recommended)
 
-**Syncthing with the VPS as the hub.** The VPS is always on, so the phone and PC never need to be online
-at the same time, and the data stays on your own server.
-
-1. VPS: install Syncthing (`apt install syncthing`, run as a user service), open the web UI over an SSH
-   tunnel or Tailscale only.
-2. Phone: install **Syncthing-Fork** (F-Droid / GitHub `researchxxl/syncthing-android`; the old official
-   app is discontinued). Share the vault folder with the VPS. Set the folder to *Send & Receive*.
-3. PC/laptop/tablet: install Syncthing, accept the same folder from the VPS, open it in Obsidian.
-4. Turn on *File versioning → Staggered* on the VPS side as a safety net.
-
-Obsidian Sync (paid) also works with Yapper. Plugin-based sync (Remotely Save, LiveSync) only sees
-Yapper's files when Obsidian is open, so Syncthing is the better fit.
+**Syncthing with the VPS as the hub**: phone ↔ VPS ↔ tablet/PC. Full steps, server config and how Yapper
+stays safe with sync on: [`docs/vault-sync.md`](vault-sync.md).
 
 ## E. Reminders: Microsoft To Do → Samsung Reminder (M3, ~15 min, once)
 

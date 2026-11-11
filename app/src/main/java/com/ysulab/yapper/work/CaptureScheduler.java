@@ -72,6 +72,19 @@ public final class CaptureScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork("sort-" + id, ExistingWorkPolicy.KEEP, req);
     }
 
+    /** Ask your vault: answer the capture's ask_vault questions (network). */
+    public static void enqueueAnswer(Context context, String id) {
+        OneTimeWorkRequest req = new OneTimeWorkRequest.Builder(AnswerWorker.class)
+                .setInputData(new Data.Builder().putString(KEY_ID, id).build())
+                .setConstraints(new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.SECONDS)
+                .addTag("capture")
+                .build();
+        WorkManager.getInstance(context).enqueueUniqueWork("answer-" + id, ExistingWorkPolicy.KEEP, req);
+    }
+
     public static void enqueueReminders(Context context, String id) {
         OneTimeWorkRequest req = new OneTimeWorkRequest.Builder(ReminderWorker.class)
                 .setInputData(new Data.Builder().putString(KEY_ID, id).build())
@@ -140,6 +153,9 @@ public final class CaptureScheduler {
     }
 
     /** {@code retryFailed}: also re-run captures whose sorting failed for good (the "Retry" button). */
+    /** Questions older than this are not answered after a reboot: the moment has passed. */
+    static final long ANSWER_WINDOW_MS = 24L * 60 * 60 * 1000;
+
     public static void reconcile(Context context, boolean retryFailed) {
         CaptureStore store = store(context);
         boolean sorterOn = new Settings(context).sorter().isConfigured();
@@ -162,7 +178,10 @@ public final class CaptureScheduler {
                     enqueueInbox(context, id);
                 } else if (m.state == CaptureMeta.State.INBOX && !m.pendingTranscribers(active).isEmpty()) {
                     enqueueTranscribe(context, id);
-                } else if (m.state == CaptureMeta.State.DONE && !m.pendingTranscribers(active).isEmpty()) {
+                } else if (m.state == CaptureMeta.State.INBOX && m.parts().isEmpty() && m.hasShared()) {
+                    enqueueTranscribe(context, id); // moves a voice-less share on to DONE
+                } else if (m.state == CaptureMeta.State.DONE && !m.pendingTranscribers(active).isEmpty()
+                        && !m.parts().isEmpty()) {
                     // A new transcriber was added later: run it on old captures too (benchmark).
                     store.update(id, x -> x.state = CaptureMeta.State.INBOX);
                     enqueueTranscribe(context, id);
@@ -171,11 +190,20 @@ public final class CaptureScheduler {
                         m = store.update(id, x -> x.sorted = "");
                     }
                     // Only captures transcribed by an M2 build (transcript saved in the bundle).
-                    if ((m.sorted.isEmpty() || "planned".equals(m.sorted)) && SortWorker.hasTranscript(store, id)) {
+                    if ((m.sorted.isEmpty() || "planned".equals(m.sorted))
+                            && (SortWorker.hasTranscript(store, id) || m.hasShared())) {
                         enqueueSort(context, id);
+                    } else if ("done".equals(m.sorted) && now - m.createdAtMs < ANSWER_WINDOW_MS) {
+                        // A question whose answer was interrupted (reboot, update): answer it now.
+                        String plan = store.readText(id, SortWorker.PLAN);
+                        if (plan.contains("\"" + com.ysulab.yapper.sort.SortAction.ASK_VAULT + "\"")
+                                && !AnswerWorker.allAnswered(store, id,
+                                        com.ysulab.yapper.sort.SortAction.fromJsonArray(plan))) {
+                            enqueueAnswer(context, id);
+                        }
                     }
                 }
-            } catch (IOException | RuntimeException e) {
+            } catch (Exception e) {
                 // One broken bundle must not block the others.
             }
         }

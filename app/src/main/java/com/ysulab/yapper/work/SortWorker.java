@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
 import com.ysulab.yapper.prayer.PrayerTimes;
+import com.ysulab.yapper.capture.SharedItems;
 import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.sort.ActionLog;
 import com.ysulab.yapper.sort.Executor;
@@ -224,8 +225,11 @@ public final class SortWorker extends Worker {
         SorterInput in = new SorterInput();
         in.transcript = transcript(store, settings, m.id);
         in.screenText = store.readText(m.id, CaptureStore.SCREEN_TEXT);
-        if (in.transcript.trim().isEmpty()) {
+        if (in.transcript.trim().isEmpty() && !m.hasShared()) {
             return null; // screen-only captures stay in Inbox
+        }
+        if ("share".equals(m.mode)) {
+            addShared(store, cfg, m, in);
         }
         in.now = captured;
         in.mode = m.mode;
@@ -245,6 +249,30 @@ public final class SortWorker extends Worker {
             in.screenshotBase64 = screenshot(store.file(m.id, CaptureStore.SCREENSHOT));
         }
         return in;
+    }
+
+    /** Shared text, file names, up to 4 images (downscaled) and one PDF (OpenRouter only). */
+    private static void addShared(CaptureStore store, SorterConfig cfg, CaptureMeta m, SorterInput in)
+            throws IOException {
+        in.sharedText = store.readText(m.id, SharedItems.TEXT_FILE);
+        boolean pdfOk = cfg.url().toLowerCase(java.util.Locale.ROOT).startsWith(SorterConfig.DEFAULT_URL);
+        for (String f : m.sharedFiles) {
+            String vaultName = SharedItems.vaultName(m.id, f);
+            in.sharedFiles.add(vaultName);
+            File file = store.file(m.id, f);
+            if (SharedItems.isImage(f) && in.sharedImagesBase64.size() < SharedItems.MAX_IMAGES_TO_SORTER) {
+                // Timetables need legible small print: allow more pixels than a screenshot gets.
+                String b64 = jpegBase64(file, 1600);
+                if (b64 != null) {
+                    in.sharedImagesBase64.add(b64);
+                }
+            } else if (pdfOk && SharedItems.isPdf(f) && in.sharedPdfBase64 == null && file.isFile()
+                    && file.length() <= SharedItems.MAX_PDF_TO_SORTER_BYTES) {
+                in.sharedPdfBase64 = Base64.encodeToString(
+                        java.nio.file.Files.readAllBytes(file.toPath()), Base64.NO_WRAP);
+                in.sharedPdfName = vaultName;
+            }
+        }
     }
 
     /** The transcript of the highest-priority transcriber that produced one. */
@@ -282,6 +310,11 @@ public final class SortWorker extends Worker {
     }
 
     private static String screenshot(File f) {
+        return jpegBase64(f, 720);
+    }
+
+    /** Decodes, downsamples to at most about {@code maxWidth} px wide, and re-encodes as JPEG base64. */
+    private static String jpegBase64(File f, int maxWidth) {
         if (!f.isFile()) {
             return null;
         }
@@ -289,7 +322,7 @@ public final class SortWorker extends Worker {
         o.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(f.getPath(), o);
         int sample = 1;
-        while (o.outWidth / (sample * 2) >= 720) {
+        while (o.outWidth / (sample * 2) >= maxWidth) {
             sample *= 2;
         }
         o = new BitmapFactory.Options();
@@ -336,6 +369,7 @@ public final class SortWorker extends Worker {
         String prefix = fromDir.isEmpty() ? "" : fromDir + "/";
         List<String> atts = new ArrayList<>(InboxNote.audioNames(m));
         atts.add(InboxNote.screenshotName(m));
+        atts.addAll(InboxNote.sharedNames(m));
         for (String att : atts) {
             String from = prefix + InboxNote.ATTACHMENTS_DIR + "/" + att;
             String to = toDir + "/" + InboxNote.ATTACHMENTS_DIR + "/" + att;

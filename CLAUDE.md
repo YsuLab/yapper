@@ -10,7 +10,8 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - Unit tests: JUnit 4 in `app/src/test`. Keep logic in plain Java classes so it is testable without Android.
 
 ## Code map
-- `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`.
+- `assist/` — side-key entry: `YapperAssistService`, `CaptureSession` (record + screen data), `AudioCapture`;
+  `ShareActivity` (share target: copies shared text/files into a "share" bundle + optional voice note; `capture/SharedItems`).
 - `capture/` — pure Java: `CaptureStore`/`CaptureMeta` (bundles), `SilenceDetector`, `ScreenText`, `ScreenshotCheck`.
 - `work/` — WorkManager: `InboxWorker` (vault note, offline), `TranscribeWorker` (network), `CaptureScheduler.reconcile`.
 - `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java), `VaultFs` (path API;

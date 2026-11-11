@@ -19,6 +19,7 @@ public final class SorterPrompt {
     static final int MAX_DAILY = 8_000;
     static final int MAX_SCREEN = 8_000;
     static final int MAX_TRANSCRIPT = 150_000;
+    static final int MAX_SHARED_TEXT = 30_000;
     /** Below this many characters of screen text, the screenshot is worth sending. */
     public static final int THIN_SCREEN_TEXT = 80;
 
@@ -51,6 +52,25 @@ public final class SorterPrompt {
             if (!in.sourceUrl.isEmpty()) sb.append("URL: ").append(in.sourceUrl).append('\n');
             sb.append('\n');
         }
+        if ("share".equals(in.mode)) {
+            sb.append("## Shared from another app\n");
+            String st = in.sharedText == null ? "" : in.sharedText.trim();
+            sb.append("Text: ").append(st.isEmpty() ? "(none)" : "\n" + cap(st, MAX_SHARED_TEXT)).append('\n');
+            if (!in.sharedFiles.isEmpty()) {
+                sb.append("Files (vault names, embed with ![[name]]):\n");
+                for (String f : in.sharedFiles) {
+                    sb.append("- ").append(f).append('\n');
+                }
+            }
+            if (!in.sharedImagesBase64.isEmpty()) {
+                sb.append("The shared image").append(in.sharedImagesBase64.size() == 1 ? " is" : "s are")
+                        .append(" attached, in the order listed.\n");
+            }
+            if (in.sharedPdfBase64 != null) {
+                sb.append("The PDF ").append(in.sharedPdfName).append(" is attached.\n");
+            }
+            return sb.toString();
+        }
         String s = in.screenText == null ? "" : in.screenText.trim();
         sb.append("## Screen text (what was on the phone screen when he started talking)\n");
         sb.append(s.isEmpty() ? "(none)" : cap(s, MAX_SCREEN)).append('\n');
@@ -68,6 +88,16 @@ public final class SorterPrompt {
         }
         JSONArray userParts = new JSONArray();
         userParts.put(new JSONObject().put("type", "text").put("text", userText(in)));
+        for (String img : in.sharedImagesBase64) {
+            userParts.put(new JSONObject().put("type", "image_url").put("image_url",
+                    new JSONObject().put("url", "data:image/jpeg;base64," + img)));
+        }
+        if (in.sharedPdfBase64 != null) {
+            // OpenRouter's file part; it passes PDFs natively to Claude and parses them for other models.
+            userParts.put(new JSONObject().put("type", "file").put("file", new JSONObject()
+                    .put("filename", in.sharedPdfName.isEmpty() ? "shared.pdf" : in.sharedPdfName)
+                    .put("file_data", "data:application/pdf;base64," + in.sharedPdfBase64)));
+        }
         if (in.screenshotBase64 != null) {
             userParts.put(new JSONObject().put("type", "image_url").put("image_url",
                     new JSONObject().put("url", "data:image/jpeg;base64," + in.screenshotBase64)));
@@ -98,6 +128,15 @@ public final class SorterPrompt {
                 return "Evening debrief. For each thing he says he finished, call complete_task. Unfinished "
                         + "things he wants to keep → add_to_daily for tomorrow, section \"Rolled over\", as "
                         + "\"- [ ] \" lines. Reflections → add_to_daily for today, section \"Debrief\".";
+            case "share":
+                return "Shared from another app (often WhatsApp): text, images (timetables, schedules, "
+                        + "screenshots) or files. The shared content is the material; the transcript, if any, is "
+                        + "his voice note saying what to do with it, and it wins over your own reading. With no "
+                        + "voice note, file the content where it belongs. Each one-off dated item (exam, deadline, "
+                        + "lecture change, meeting) → create_reminder. A recurring weekly timetable → type it out as "
+                        + "a markdown table in the right note, with no reminder per slot unless he asks. When you write a "
+                        + "note about a shared file, embed it with ![[name]] using the vault name listed below, "
+                        + "so the original sits next to your text. Keep the sender's wording for quotes.";
             case "ramble":
                 return "Long ramble (many minutes, many topics). Split it into every separate item and file "
                         + "each one. Expect many tool calls.";

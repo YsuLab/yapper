@@ -54,6 +54,32 @@
             </intent-filter>
         </activity>
 
+        <!-- Share → Yapper from WhatsApp or any app: text, images, PDFs, other files, one or many. -->
+        <activity
+            android:name=".assist.ShareActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/share_label"
+            android:launchMode="standard"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Yapper.Translucent">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!-- A mixed WhatsApp selection (photo + PDF) arrives as */*. -->
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
         <!-- M4/M5: start or stop a ramble (tile, launcher shortcuts, daily nudges) -->
         <activity
             android:name=".assist.RambleActivity"

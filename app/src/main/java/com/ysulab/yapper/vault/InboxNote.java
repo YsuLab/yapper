@@ -34,6 +34,7 @@ public final class InboxNote {
             case "ramble": kind = "Ramble "; break;
             case "plan": kind = "Plan "; break;
             case "debrief": kind = "Debrief "; break;
+            case "share": kind = "Share "; break;
             default: kind = "Capture "; break;
         }
         return kind + local(m).format(FILE_STAMP) + ".md";
@@ -71,7 +72,26 @@ public final class InboxNote {
         return m.id + ".jpg";
     }
 
+    /** Vault names of the shared files, in order: {@code <id>-shared-01.jpg} … */
+    public static java.util.List<String> sharedNames(CaptureMeta m) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String f : m.sharedFiles) {
+            out.add(com.ysulab.yapper.capture.SharedItems.vaultName(m.id, f));
+        }
+        return out;
+    }
+
     public static String build(CaptureMeta m, String screenText, boolean hasScreenshot, boolean hasAudio) {
+        return build(m, screenText, hasScreenshot, hasAudio, "");
+    }
+
+    /**
+     * {@code sharedText}: text shared from another app ("share" mode), shown as a quote so the
+     * owner's words and the shared content stay apart. Shared files are embedded by their vault name.
+     */
+    public static String build(CaptureMeta m, String screenText, boolean hasScreenshot, boolean hasAudio,
+            String sharedText) {
+        boolean share = "share".equals(m.mode);
         StringBuilder sb = new StringBuilder();
         sb.append("---\n");
         sb.append("yapper: ").append(m.mode.isEmpty() ? "capture" : m.mode).append('\n');
@@ -84,7 +104,11 @@ public final class InboxNote {
             sb.append("source_url: ").append(yamlScalar(m.webUri)).append('\n');
         }
         sb.append("duration_s: ").append(Math.round(m.durationMs / 1000.0)).append('\n');
-        sb.append("screenshot: ").append(m.screenshot).append('\n');
+        if (share) {
+            sb.append("shared_files: ").append(m.sharedFiles.size()).append('\n');
+        } else {
+            sb.append("screenshot: ").append(m.screenshot).append('\n');
+        }
         sb.append("tags: [yapper/inbox]\n");
         sb.append("---\n");
         sb.append(YapId.marker(m.id)).append('\n');
@@ -92,8 +116,32 @@ public final class InboxNote {
             for (String name : audioNames(m)) {
                 sb.append("![[").append(name).append("]]\n");
             }
+        } else if (share) {
+            sb.append("_No voice note._\n");
         } else {
             sb.append("_No audio recorded (microphone unavailable)._\n");
+        }
+        if (share) {
+            sb.append("\n## Shared\n");
+            String st = sharedText == null ? "" : sharedText.trim();
+            if (!st.isEmpty()) {
+                if (st.length() > MAX_SCREEN_TEXT) {
+                    st = st.substring(0, MAX_SCREEN_TEXT) + "\n…";
+                }
+                for (String line : st.split("\n", -1)) {
+                    sb.append("> ").append(line).append('\n');
+                }
+            }
+            for (String name : sharedNames(m)) {
+                boolean image = com.ysulab.yapper.capture.SharedItems.isImage(name);
+                sb.append(st.isEmpty() ? "" : "\n").append("![[").append(name).append(image ? "|400]]" : "]]")
+                        .append('\n');
+                st = "";
+            }
+            if (m.sharedSkipped > 0) {
+                sb.append("\n_").append(m.sharedSkipped).append(m.sharedSkipped == 1 ? " file was" : " files were")
+                        .append(" not copied (too big, too many, or unreadable)._\n");
+            }
         }
         if (hasScreenshot) {
             sb.append("\n![[").append(screenshotName(m)).append("|300]]\n");

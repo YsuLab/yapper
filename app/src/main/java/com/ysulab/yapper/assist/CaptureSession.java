@@ -59,7 +59,7 @@ public class CaptureSession extends VoiceInteractionSession {
     });
     private static final long POLL_MS = 100;
     /** Time to show "saved" while the smoke settles. The bundle is already queued by then. */
-    private static final long GOT_IT_MS = 700;
+    private static final long GOT_IT_MS = 1300;
     private static final int MAX_SCREEN_CHARS = 20_000;
 
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -93,10 +93,12 @@ public class CaptureSession extends VoiceInteractionSession {
         dot = v.findViewById(R.id.capture_dot);
         field = v.findViewById(R.id.capture_field);
         SmokeScene scene = field.scene();
-        scene.moonY = 0.42f;
-        scene.moonR = 0.09f;
-        scene.quietTop = 0.11f;
-        scene.quietBottom = 0.11f;
+        // Smaller sheet over the screen you were on: the moon sits high, the words sit in the dark band below.
+        scene.transparent = true;
+        scene.moonY = 0.36f;
+        scene.moonR = 0.13f;
+        scene.quietTop = 0f;
+        scene.quietBottom = 0.26f;
         // Only a tap on the sheet itself ends the capture; a stray touch on the dimmed top part does nothing.
         v.findViewById(R.id.capture_sheet).setOnClickListener(x -> stop("tap"));
         return v;

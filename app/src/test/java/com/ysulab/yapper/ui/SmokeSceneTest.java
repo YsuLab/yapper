@@ -51,7 +51,8 @@ public class SmokeSceneTest {
     public void smokeRisesFromTheBottomFirst() {
         SmokeScene s = new SmokeScene(3f);
         s.setHeld(true);
-        for (int i = 0; i < 12; i++) {
+        // Half a second in (the rise starts slow on purpose).
+        for (int i = 0; i < 30; i++) {
             s.step(0.016f, 0f);
         }
         byte[] out = render(s);
@@ -143,6 +144,55 @@ public class SmokeSceneTest {
     }
 
     @Test
+    public void transparentRestIsAllClear() {
+        SmokeScene s = new SmokeScene(3f);
+        s.transparent = true;
+        for (byte b : render(s)) {
+            assertEquals(SmokeScene.INK_CLEAR, b);
+        }
+    }
+
+    @Test
+    public void transparentSheetShowsTheScreenAtTopAndDarkensTheTextBand() {
+        SmokeScene s = new SmokeScene(4f);
+        s.transparent = true;
+        s.quietTop = 0f;
+        s.quietBottom = 0.25f;
+        s.snap(1f, 0f);
+        byte[] out = render(s);
+        int clearTop = count(out, 0, H / 6, SmokeScene.INK_CLEAR);
+        assertTrue("top is mostly see-through, got " + clearTop, clearTop > W * (H / 6) * 0.6f);
+        int band = W * (H / 10);
+        int seeThrough = count(out, H - H / 10, H, SmokeScene.INK_CLEAR);
+        assertTrue("words sit on near-solid dark, got " + seeThrough, seeThrough < band * 0.05f);
+    }
+
+    @Test
+    public void lettingGoDissolvesUpwardThenStops() {
+        SmokeScene s = new SmokeScene(1f);
+        s.setHeld(true);
+        for (int i = 0; i < 200; i++) {
+            s.step(0.016f, 0.4f);
+        }
+        s.setHeld(false);
+        for (int i = 0; i < 40; i++) {
+            s.step(0.016f, 0f);
+        }
+        assertTrue("still dissolving", s.isAnimating());
+        byte[] out = render(s);
+        assertTrue("bottom clears before the top",
+                countNonGround(out, H - H / 6, H) < countNonGround(out, H / 3, H / 2));
+        for (int i = 0; i < 60; i++) {
+            s.step(0.016f, 0f);
+        }
+        assertFalse(s.isAnimating());
+        assertEquals(0f, s.emerge(), 0f);
+        for (byte b : render(s)) {
+            assertEquals(SmokeScene.INK_GROUND, b);
+        }
+    }
+
+    @Test
     public void renderingIsDeterministic() {
         SmokeScene a = new SmokeScene(5f);
         SmokeScene b = new SmokeScene(5f);
@@ -155,6 +205,18 @@ public class SmokeSceneTest {
         byte[] out = new byte[W * H];
         s.render(W, H, out);
         return out;
+    }
+
+    private static int count(byte[] out, int y0, int y1, byte ink) {
+        int n = 0;
+        for (int y = y0; y < y1; y++) {
+            for (int x = 0; x < W; x++) {
+                if (out[y * W + x] == ink) {
+                    n++;
+                }
+            }
+        }
+        return n;
     }
 
     private static int countNonGround(byte[] out, int y0, int y1) {

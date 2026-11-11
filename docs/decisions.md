@@ -168,3 +168,8 @@ Newest first. Format: date — decision — why.
   stay as Actions artifacts.
 - **`YapId` format `yyyyMMdd-HHmmss-xxxx` (UTC + 4 base-36 chars).** Time-sortable, short enough for
   `%%yap:<id>%%` markers, and collision-safe for one person's capture rate.
+
+### 2026-11-11 — Capture sheet v2: smaller, see-through, crafted smoke
+- Sheet is 300dp (about a third of the S24 Ultra screen), full width, no box. Owner: the full-height black sheet killed the vibe.
+- The screen behind stays visible: empty cells are transparent, and a dithered dark haze rises with the smoke (none at the top, near solid under the words). The scrim is a light gradient, not 70 % black.
+- Motion: 1.8 s eased rise with uneven plumes, moonrise through the smoke, two smoke layers at different speeds for depth, voice speeds the drift. On release the smoke detaches from the bottom and drifts away over 1.2 s ("saved" shows for 1.3 s).

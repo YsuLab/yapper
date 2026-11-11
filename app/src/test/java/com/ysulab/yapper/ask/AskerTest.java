@@ -38,19 +38,23 @@ public class AskerTest {
 
         @Override
         public JsonHttp.Response post(String json) throws IOException {
-            requests.add(new JSONObject(json));
+            try {
+                requests.add(new JSONObject(json));
+            } catch (Exception e) { // JSONException is checked on Android
+                throw new IOException(e);
+            }
             if (replies.isEmpty()) throw new IOException("no more replies");
             return replies.poll();
         }
     }
 
-    private static String text(String content) {
+    private static String text(String content) throws Exception {
         return new JSONObject().put("model", "anthropic/claude-sonnet-5.5").put("choices", new JSONArray().put(
                 new JSONObject().put("message", new JSONObject().put("role", "assistant").put("content", content))))
                 .toString();
     }
 
-    private static String toolCall(String name, JSONObject args) {
+    private static String toolCall(String name, JSONObject args) throws Exception {
         JSONObject call = new JSONObject().put("id", "call_1").put("type", "function")
                 .put("function", new JSONObject().put("name", name).put("arguments", args.toString()));
         return new JSONObject().put("choices", new JSONArray().put(new JSONObject().put("message",
@@ -130,7 +134,7 @@ public class AskerTest {
     }
 
     @Test
-    public void httpErrorsAreRetryableOnlyWhenTransient() {
+    public void httpErrorsAreRetryableOnlyWhenTransient() throws Exception {
         for (int code : new int[] {429, 503, 401}) {
             Asker.Chat c = json -> new JsonHttp.Response(code, "{\"error\":\"x\"}");
             try {
@@ -143,7 +147,7 @@ public class AskerTest {
     }
 
     @Test
-    public void networkFailureIsRetryable() {
+    public void networkFailureIsRetryable() throws Exception {
         Asker.Chat c = json -> {
             throw new IOException("offline");
         };
@@ -156,7 +160,7 @@ public class AskerTest {
     }
 
     @Test
-    public void badToolArgumentsDoNotCrash() {
+    public void badToolArgumentsDoNotCrash() throws Exception {
         Asker asker = new Asker(new SorterConfig(), "x", search(), NOW, null);
         Asker.Answer a = new Asker.Answer();
         assertTrue(asker.runTool(new JSONObject().put("name", "search_vault").put("arguments", "{oops"), a)
@@ -168,7 +172,7 @@ public class AskerTest {
     }
 
     @Test
-    public void queryIgnoresBadDates() {
+    public void queryIgnoresBadDates() throws Exception {
         VaultSearch.Query q = Asker.query(new JSONArray().put("GCP").put("GCP").put(" "), "last week", "2026-11-11");
         assertEquals(List.of("GCP"), q.terms);
         assertEquals(null, q.since);

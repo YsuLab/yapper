@@ -82,6 +82,15 @@ public final class Settings {
         prefs.edit().putInt("nudge_morning", morningMin).putInt("nudge_evening", eveningMin).apply();
     }
 
+    /** Weekly review nudge on Saturday, minutes after midnight; -1 = off. */
+    public int reviewNudgeMin() {
+        return prefs.getInt("nudge_review", 10 * 60);
+    }
+
+    public void setReviewNudge(int min) {
+        prefs.edit().putInt("nudge_review", min).apply();
+    }
+
     /** M1 benchmark: run every configured transcriber on every capture. */
     public boolean compareAll() {
         return prefs.getBoolean("compare_all", true);

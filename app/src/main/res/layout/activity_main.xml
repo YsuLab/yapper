@@ -122,6 +122,11 @@
             style="@style/Yapper.Button"
             android:text="@string/btn_debrief" />
 
+        <Button
+            android:id="@+id/btn_review"
+            style="@style/Yapper.Button"
+            android:text="@string/btn_review" />
+
         <TextView
             style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
@@ -292,6 +297,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/hint_nudge_evening"
+            android:inputType="time"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/nudge_review"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_nudge_review"
             android:inputType="time"
             android:singleLine="true" />
 

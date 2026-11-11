@@ -26,6 +26,7 @@ public final class Summary {
         int blocks = 0;
         int done = 0;
         Set<String> linked = new LinkedHashSet<>();
+        boolean review = false;
         for (SortAction a : plan) {
             switch (a.tool) {
                 case SortAction.APPEND:
@@ -50,11 +51,17 @@ public final class Summary {
                 case SortAction.ENTITY:
                     linked.add(a.title);
                     break;
+                case SortAction.REVIEW:
+                    review = true;
+                    break;
                 default:
                     break;
             }
         }
         List<String> parts = new ArrayList<>();
+        if (review) {
+            parts.add("Weekly review saved");
+        }
         if (blocks > 0) {
             parts.add("Plan: " + plural(blocks, "block"));
         }
@@ -82,6 +89,11 @@ public final class Summary {
     /** The first note a "View" action should open: a note we wrote to, else the daily note or Inbox.md. */
     public static String viewPath(List<SortAction> plan) {
         String fallback = null;
+        for (SortAction a : plan) {
+            if (SortAction.REVIEW.equals(a.tool) && !a.path.isEmpty()) {
+                return a.path;
+            }
+        }
         for (SortAction a : plan) {
             if (SortAction.APPEND.equals(a.tool) || SortAction.CREATE.equals(a.tool)) {
                 return a.path;
@@ -176,6 +188,8 @@ public final class Summary {
             }
             case SortAction.CHECK:
                 return "Done ✓ " + a.title;
+            case SortAction.REVIEW:
+                return "Weekly review in " + (a.path.isEmpty() ? "Weekly/" : link(a.path));
             case SortAction.ENTITY:
                 return "Linked " + link(a.path) + (a.markdown.isEmpty() ? "" : ": " + oneLine(a.markdown));
             default:

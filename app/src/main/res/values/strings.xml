@@ -120,6 +120,15 @@
     <string name="ramble_title">Rambling…</string>
     <string name="ramble_title_plan">Planning your day…</string>
     <string name="ramble_title_debrief">Evening debrief…</string>
+    <string name="ramble_title_review">Weekly review…</string>
+    <string name="btn_review">Weekly review</string>
+    <string name="review_building">Building your week… a notification comes in a moment.</string>
+    <string name="hint_nudge_review">Saturday weekly review nudge, HH:mm (default 10:00)</string>
+    <string name="channel_review">Weekly review</string>
+    <string name="review_title">Your week %1$s is ready</string>
+    <string name="review_text">%1$s. Read it, then tap Reflect and say what went well and what could be better.</string>
+    <string name="review_text_no_vault">Tap Reflect and say what went well this week and what could be better.</string>
+    <string name="review_reflect">Reflect</string>
     <string name="ramble_text">Talk as long as you like. Tap Stop when done.</string>
     <string name="ramble_stop">Stop and save</string>
     <string name="ramble_started">Recording. Lock the phone if you like.</string>
@@ -131,7 +140,7 @@
 
     <!-- M5 today -->
     <string name="section_today">Daily nudges</string>
-    <string name="today_help">A notification each morning and evening. One tap and you talk: the plan becomes time blocks with alarms; the debrief ticks off what you did and rolls the rest to tomorrow. Leave a time empty to turn that nudge off.</string>
+    <string name="today_help">A notification each morning and evening. One tap and you talk: the plan becomes time blocks with alarms; the debrief ticks off what you did and rolls the rest to tomorrow. On Saturday, Yapper builds your week (done, open, notes you touched) in Weekly/ and asks you to reflect. Leave a time empty to turn that nudge off.</string>
     <string name="hint_nudge_morning">Morning plan nudge, HH:mm (default 08:00)</string>
     <string name="hint_nudge_evening">Evening debrief nudge, HH:mm (default 21:30)</string>
     <string name="channel_nudge">Daily plan and debrief</string>

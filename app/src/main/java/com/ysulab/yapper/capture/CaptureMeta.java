@@ -49,7 +49,7 @@ public final class CaptureMeta {
     public int sharedTextChars;
     /** Files in the share that could not be copied (too big, too many, unreadable). */
     public int sharedSkipped;
-    /** "" (quick capture), "ramble", "plan" (morning plan), "debrief" (evening) or "share". */
+    /** "" (quick capture), "ramble", "plan" (morning plan), "debrief" (evening), "share" or "review" (weekly). */
     public String mode = "";
     public long durationMs;
     public long speechMs;

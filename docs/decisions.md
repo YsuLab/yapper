@@ -55,6 +55,27 @@ Newest first. Format: date — decision — why.
 - **Recurring weekly timetables are typed out as a table, not one reminder per slot**, unless the voice note
   asks for reminders. One-off dated items (exam, deadline, moved lecture) do become reminders.
 
+## 2026-11-11 — Weekly review (Saturday)
+- **Week = Sunday to Saturday** (Saudi week). Note path `Weekly/YYYY-Www.md` with Sunday-start week numbers
+  (week 1 holds 1 January), title "Week 46 · 8–14 Nov 2026". Owner reflects on Saturdays.
+- **Saturday nudge, default 10:00, configurable/off** in Settings (Daily nudges section). It first builds the
+  week's note, then notifies "Your week W46 is ready · 12 done · 5 open · …" with View (Obsidian) and Reflect.
+  Also a "Weekly review" button in the app for any day.
+- **The week summary is built by the app, not an LLM** (`review/WeekDigest`): offline, free, no invented facts.
+  Sources: daily notes (done/open tasks, deduped across roll-overs; Debrief lines), lines under this week's
+  dated headings in any note (Yapper's appends and entity logs), notes Yapper created this week (marker ids
+  carry the date), capture count, open ❓ questions in `Inbox.md`, and last week's "Focus for next week".
+  Only notes modified since Sunday are read.
+- **Reflection = ramble in mode `review` → new sorter tool `weekly_review`** (summary, went_well,
+  could_be_better, focus_next_week, notes). Written under `## Reflection` in the week's note; focus items are
+  `- [ ]` tasks and show up again at the top of next week's note ("Last week's focus"), closing the loop.
+  The sorter sees the week summary so it can resolve "that GCP thing" and link notes.
+- **Late review:** a review made on Sunday or Monday is about the week that just ended; Tuesday to Saturday it
+  is the current week (`WeekRange.forReview`).
+- **Refresh without rewriting owner text:** the app remembers (app storage) what it last wrote to the week's
+  note. If the note is still exactly that, a later build replaces it with a fresh one (so a Saturday-night
+  review sees the whole week). Once the owner or a reflection changed it, it is never rewritten.
+
 ## 2026-11-11 — Second brain (entity notes + links)
 - **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
   person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"

@@ -35,6 +35,7 @@ public final class InboxNote {
             case "plan": kind = "Plan "; break;
             case "debrief": kind = "Debrief "; break;
             case "share": kind = "Share "; break;
+            case "review": kind = "Review "; break;
             default: kind = "Capture "; break;
         }
         return kind + local(m).format(FILE_STAMP) + ".md";

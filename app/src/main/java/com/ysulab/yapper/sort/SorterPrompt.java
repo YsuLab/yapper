@@ -20,6 +20,7 @@ public final class SorterPrompt {
     static final int MAX_SCREEN = 8_000;
     static final int MAX_TRANSCRIPT = 150_000;
     static final int MAX_SHARED_TEXT = 30_000;
+    static final int MAX_WEEKLY = 16_000;
     /** Below this many characters of screen text, the screenshot is worth sending. */
     public static final int THIN_SCREEN_TEXT = 80;
 
@@ -42,6 +43,10 @@ public final class SorterPrompt {
         String mode = modeNote(in.mode);
         if (!mode.isEmpty()) {
             sb.append("## Capture mode\n").append(mode).append("\n\n");
+        }
+        if (in.weekly != null && !in.weekly.trim().isEmpty()) {
+            sb.append("## His week so far (").append(in.weeklyPath).append(", built from the vault)\n")
+                    .append(cap(in.weekly.trim(), MAX_WEEKLY)).append("\n\n");
         }
         sb.append("## Transcript\n");
         String t = in.transcript == null ? "" : in.transcript.trim();
@@ -137,6 +142,13 @@ public final class SorterPrompt {
                         + "a markdown table in the right note, with no reminder per slot unless he asks. When you write a "
                         + "note about a shared file, embed it with ![[name]] using the vault name listed below, "
                         + "so the original sits next to your text. Keep the sender's wording for quotes.";
+            case "review":
+                return "Weekly review. He is reflecting on his week (what went well, what could be better, "
+                        + "what to change). Call weekly_review once: a short summary, went_well, could_be_better "
+                        + "and focus_next_week, in his words. Use \"His week so far\" to resolve what he refers "
+                        + "to and to [[link]] the notes he mentions, but only write what he said, not the list. "
+                        + "Concrete tasks with a time → create_reminder; facts about people or projects → "
+                        + "link_entity, as usual.";
             case "ramble":
                 return "Long ramble (many minutes, many topics). Split it into every separate item and file "
                         + "each one. Expect many tool calls.";

@@ -266,6 +266,50 @@ public final class SafVaultFs implements VaultFs {
         }
     }
 
+    @Override
+    public Map<String, Long> listNotes() {
+        Map<String, Long> out = new java.util.TreeMap<>();
+        Uri tree = vault.root().getUri();
+        listInto(tree, DocumentsContract.getDocumentId(tree), "", out);
+        return out;
+    }
+
+    private void listInto(Uri tree, String docId, String prefix, Map<String, Long> out) {
+        ContentResolver cr = vault.context().getContentResolver();
+        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
+        String[] cols = {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        };
+        Map<String, String> dirs = new HashMap<>();
+        try (Cursor c = cr.query(children, cols, null, null, null)) {
+            if (c == null) {
+                return;
+            }
+            while (c.moveToNext() && out.size() < MAX_NOTES * 2) {
+                String name = c.getString(1);
+                if (name == null || name.startsWith(".")) {
+                    continue;
+                }
+                String path = prefix + name;
+                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(c.getString(2))) {
+                    dirs.put(path, c.getString(0));
+                } else if (name.toLowerCase(java.util.Locale.ROOT).endsWith(".md")) {
+                    out.put(path, c.isNull(3) ? 0L : c.getLong(3));
+                }
+            }
+        } catch (RuntimeException e) {
+            return; // provider hiccup: list what we have
+        }
+        for (Map.Entry<String, String> d : dirs.entrySet()) {
+            if (!d.getKey().endsWith("/" + InboxNote.ATTACHMENTS_DIR) && !d.getKey().equals(InboxNote.ATTACHMENTS_DIR)) {
+                listInto(tree, d.getValue(), d.getKey() + "/", out);
+            }
+        }
+    }
+
     private static String readHead(ContentResolver cr, Uri uri) {
         try (InputStream in = cr.openInputStream(uri)) {
             if (in == null) {

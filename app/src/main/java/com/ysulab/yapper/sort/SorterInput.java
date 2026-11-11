@@ -26,6 +26,9 @@ public final class SorterInput {
     /** One shared PDF as base64, or null. Only sent to OpenRouter (it reads PDFs for any model). */
     public String sharedPdfBase64;
     public String sharedPdfName = "";
-    /** "" (quick capture), "ramble", "plan", "debrief" (M4/M5) or "share". */
+    /** "" (quick capture), "ramble", "plan", "debrief" (M4/M5), "share" or "review". */
     public String mode = "";
+    /** Review mode: the week's note path and its auto-built summary (what he did this week). */
+    public String weeklyPath = "";
+    public String weekly = "";
 }

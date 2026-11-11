@@ -23,6 +23,8 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
 - `prayer/` — `PrayerTimes`: Umm al-Qura prayer times for Jeddah, computed locally; its 8-day table goes into the
   sorter prompt so "after Asr" resolves to a clock time.
+- `review/` — weekly review, pure Java: `WeekRange` (Sun–Sat, `Weekly/YYYY-Www.md`), `WeekDigest` (week summary
+  from the vault). `work/WeeklyWorker` builds it Saturday and asks for a reflection (`weekly_review` tool).
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `server/syncthing/` — VPS sync hub (docker-compose, ignore list). Guide: `docs/vault-sync.md`.

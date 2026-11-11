@@ -24,7 +24,7 @@ public final class DitherView extends View implements Choreographer.FrameCallbac
     private static HandlerThread worker;
 
     private final SmokeScene scene = new SmokeScene((SystemClock.elapsedRealtime() % 100_000) / 1000f);
-    private final int[] palette = new int[5];
+    private final int[] palette = new int[SmokeScene.INKS];
     private final Paint paint = new Paint();
     private final Rect dst = new Rect();
     private final Handler bg;
@@ -53,6 +53,7 @@ public final class DitherView extends View implements Choreographer.FrameCallbac
         palette[SmokeScene.INK_ASH] = context.getColor(R.color.yapper_ash);
         palette[SmokeScene.INK_MOON] = context.getColor(R.color.yapper_primary);
         palette[SmokeScene.INK_MOON_LIT] = context.getColor(R.color.yapper_primary_line);
+        palette[SmokeScene.INK_CLEAR] = 0x00000000;
         bg = new Handler(worker().getLooper());
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
@@ -81,7 +82,7 @@ public final class DitherView extends View implements Choreographer.FrameCallbac
         kick();
     }
 
-    /** Capture ended: smoke settles and the rings fade. */
+    /** Capture ended: the smoke detaches from the bottom and drifts away; the moon sinks. */
     public void release() {
         synchronized (lock) {
             scene.setHeld(false);
@@ -187,7 +188,7 @@ public final class DitherView extends View implements Choreographer.FrameCallbac
         cellsH = Math.max(1, Math.round(h / cell));
         synchronized (lock) {
             bitmap = Bitmap.createBitmap(cellsW, cellsH, Bitmap.Config.ARGB_8888);
-            bitmap.eraseColor(palette[SmokeScene.INK_GROUND]);
+            bitmap.eraseColor(palette[scene.transparent ? SmokeScene.INK_CLEAR : SmokeScene.INK_GROUND]);
         }
         dst.set(0, 0, w, h);
         requestRender();
@@ -215,7 +216,7 @@ public final class DitherView extends View implements Choreographer.FrameCallbac
         Bitmap b = bitmap;
         if (b != null) {
             canvas.drawBitmap(b, null, dst, paint);
-        } else {
+        } else if (!scene.transparent) {
             canvas.drawColor(palette[SmokeScene.INK_GROUND]);
         }
     }

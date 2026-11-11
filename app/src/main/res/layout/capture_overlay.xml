@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Capture sheet: the sheet itself is the dither field (moon ripples). Words sit in the corners, in mono. -->
+<!-- Capture sheet: about a third of the screen at the bottom, no box. The dither field is the sheet:
+     smoke rises from the bottom edge and fades out toward the top, so the screen behind stays visible.
+     Words sit in the dark band at the bottom, in mono. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/yapper_scrim"
+    android:background="@drawable/scrim_fade"
     android:clickable="true"
     android:focusable="true">
 
     <FrameLayout
         android:id="@+id/capture_sheet"
         android:layout_width="match_parent"
-        android:layout_height="440dp"
-        android:layout_gravity="bottom"
-        android:layout_margin="12dp"
-        android:background="@drawable/sheet_frame"
-        android:clipToOutline="true">
+        android:layout_height="@dimen/capture_sheet_height"
+        android:layout_gravity="bottom">
 
         <com.ysulab.yapper.ui.DitherView
             android:id="@+id/capture_field"
@@ -22,45 +21,51 @@
             android:layout_height="match_parent" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:id="@+id/capture_dot"
-                android:layout_width="6dp"
-                android:layout_height="6dp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/rec_dot" />
-
-            <TextView
-                android:id="@+id/capture_title"
-                style="@style/Yapper.Readout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:accessibilityLiveRegion="polite"
-                android:text="@string/capture_listening" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/capture_timer"
-            style="@style/Yapper.Readout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:layout_margin="16dp"
-            android:text="0:00" />
-
-        <TextView
-            android:id="@+id/capture_hint"
-            style="@style/Yapper.Readout.Muted"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|start"
-            android:layout_margin="16dp"
-            android:text="@string/capture_hint" />
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/capture_dot"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/rec_dot" />
+
+                <TextView
+                    android:id="@+id/capture_title"
+                    style="@style/Yapper.Readout"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="@string/capture_listening" />
+
+                <TextView
+                    android:id="@+id/capture_timer"
+                    style="@style/Yapper.Readout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0:00" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/capture_hint"
+                style="@style/Yapper.Readout.Muted"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/capture_hint" />
+        </LinearLayout>
     </FrameLayout>
 </FrameLayout>

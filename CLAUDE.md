@@ -20,6 +20,8 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
   `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
   `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
+- `prayer/` — `PrayerTimes`: Umm al-Qura prayer times for Jeddah, computed locally; its 8-day table goes into the
+  sorter prompt so "after Asr" resolves to a clock time.
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `server/syncthing/` — VPS sync hub (docker-compose, ignore list). Guide: `docs/vault-sync.md`.

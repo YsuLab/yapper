@@ -1,0 +1,11 @@
+- Mon 2026-11-09: Fajr 05:12 · Sunrise 06:31 · Dhuhr 12:07 · Asr 15:20 · Maghrib 17:43 · Isha 19:13
+- Tue 2026-11-10: Fajr 05:13 · Sunrise 06:31 · Dhuhr 12:07 · Asr 15:19 · Maghrib 17:43 · Isha 19:13
+- Wed 2026-11-11: Fajr 05:13 · Sunrise 06:32 · Dhuhr 12:07 · Asr 15:19 · Maghrib 17:42 · Isha 19:12
+- Thu 2026-11-12: Fajr 05:14 · Sunrise 06:32 · Dhuhr 12:07 · Asr 15:19 · Maghrib 17:42 · Isha 19:12
+- Fri 2026-11-13: Fajr 05:14 · Sunrise 06:33 · Dhuhr (Jumuah) 12:07 · Asr 15:19 · Maghrib 17:42 · Isha 19:12
+- Sat 2026-11-14: Fajr 05:15 · Sunrise 06:34 · Dhuhr 12:08 · Asr 15:19 · Maghrib 17:42 · Isha 19:12
+- Sun 2026-11-15: Fajr 05:15 · Sunrise 06:34 · Dhuhr 12:08 · Asr 15:19 · Maghrib 17:41 · Isha 19:11
+- Mon 2026-11-16: Fajr 05:15 · Sunrise 06:35 · Dhuhr 12:08 · Asr 15:18 · Maghrib 17:41 · Isha 19:11
+- Tue 2026-11-17: Fajr 05:16 · Sunrise 06:35 · Dhuhr 12:08 · Asr 15:18 · Maghrib 17:41 · Isha 19:11
+- Wed 2026-11-18: Fajr 05:17 · Sunrise 06:36 · Dhuhr 12:08 · Asr 15:18 · Maghrib 17:41 · Isha 19:11
+- Thu 2026-11-19: Fajr 05:17 · Sunrise 06:37 · Dhuhr 12:09 · Asr 15:18 · Maghrib 17:40 · Isha 19:10

@@ -4,14 +4,17 @@
     <string name="tagline">One button. Talk. Everything lands in the right place.</string>
 
     <!-- Capture overlay -->
-    <string name="capture_listening">Listening…</string>
-    <string name="capture_hint">Talk. I stop after a short pause, or tap anywhere.</string>
-    <string name="capture_got_it">Got it ✓</string>
-    <string name="capture_no_mic">Saved the screen only</string>
+    <string name="capture_listening">listening</string>
+    <string name="capture_hint">pause, or tap here to finish</string>
+    <string name="capture_got_it">saved</string>
+    <string name="capture_got_it_hint">filing it now</string>
+    <string name="capture_no_mic">screen saved · no mic</string>
+    <string name="capture_no_mic_readout">open yapper and allow the microphone</string>
+    <string name="capture_mic_busy_readout">microphone busy · call or recorder</string>
     <string name="capture_no_mic_hint">Open Yapper and allow the microphone.</string>
     <string name="capture_mic_busy_hint">The microphone is busy (call or another recorder).</string>
-    <string name="capture_failed">Couldn\'t save</string>
-    <string name="capture_failed_hint">Phone storage error. Nothing was recorded.</string>
+    <string name="capture_failed">not saved</string>
+    <string name="capture_failed_hint">phone storage error · nothing recorded</string>
 
     <!-- Notifications -->
     <string name="channel_status">Capture status</string>
@@ -25,10 +28,22 @@
     <string name="action_view">View</string>
     <string name="action_undo">Undo</string>
 
+    <!-- Main screen -->
+    <string name="section_setup">Setup</string>
+    <string name="section_status">Captures</string>
+    <string name="section_settings">Settings</string>
+    <string name="st_ready">Ready</string>
+    <string name="st_needs_you">Needs you</string>
+    <string name="st_off">Off</string>
+    <string name="st_on">Recording</string>
+    <string name="st_ramble">Ramble in progress</string>
+    <string name="home_readout_idle">ready · press the side key</string>
+    <string name="home_readout_setup">setup · %1$d left</string>
+
     <!-- Setup screen -->
-    <string name="btn_permissions">1 · Allow microphone and notifications</string>
-    <string name="btn_assistant">2 · Set Yapper as digital assistant</string>
-    <string name="btn_vault">3 · Choose Obsidian vault folder</string>
+    <string name="btn_permissions">Allow microphone and notifications</string>
+    <string name="btn_assistant">Set Yapper as digital assistant</string>
+    <string name="btn_vault">Choose Obsidian vault folder</string>
     <string name="section_capture">Capture</string>
     <string name="hint_silence">Seconds of silence that end a capture (default 2.0)</string>
     <string name="section_transcribers">Transcribers</string>
@@ -92,10 +107,10 @@
     <!-- M4 ramble -->
     <string name="section_talk">Talk</string>
     <string name="talk_help">Ramble records with the screen off for up to an hour. Stop it from the notification. Also on the Quick Settings tile and by long-pressing the Yapper icon.</string>
-    <string name="btn_ramble">🎙 Ramble</string>
-    <string name="btn_plan">☀️ Plan my day</string>
-    <string name="btn_debrief">🌙 Evening debrief</string>
-    <string name="btn_stop_ramble">⏹ Stop and save</string>
+    <string name="btn_ramble">Ramble</string>
+    <string name="btn_plan">Plan my day</string>
+    <string name="btn_debrief">Evening debrief</string>
+    <string name="btn_stop_ramble">Stop and save</string>
     <string name="channel_ramble">Ramble recording</string>
     <string name="ramble_title">Rambling…</string>
     <string name="ramble_title_plan">Planning your day…</string>
@@ -103,7 +118,7 @@
     <string name="ramble_text">Talk as long as you like. Tap Stop when done.</string>
     <string name="ramble_stop">Stop and save</string>
     <string name="ramble_started">Recording. Lock the phone if you like.</string>
-    <string name="ramble_saved">Got it ✓</string>
+    <string name="ramble_saved">Saved</string>
     <string name="tile_ramble">Ramble</string>
     <string name="shortcut_ramble">Ramble</string>
     <string name="shortcut_plan">Plan my day</string>

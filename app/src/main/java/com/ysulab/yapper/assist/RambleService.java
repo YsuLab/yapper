@@ -274,7 +274,8 @@ public final class RambleService extends Service {
             default: title = R.string.ramble_title; break;
         }
         Notification.Builder b = new Notification.Builder(this, CHANNEL)
-                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setSmallIcon(R.drawable.ic_stat_yapper)
+                .setColor(getColor(R.color.yapper_primary))
                 .setContentTitle(getString(title))
                 .setContentText(getString(R.string.ramble_text))
                 .setUsesChronometer(true)

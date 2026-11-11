@@ -168,3 +168,13 @@ Newest first. Format: date — decision — why.
   stay as Actions artifacts.
 - **`YapId` format `yyyyMMdd-HHmmss-xxxx` (UTC + 4 base-36 chars).** Time-sortable, short enough for
   `%%yap:<id>%%` markers, and collision-safe for one person's capture rate.
+
+### 2026-11-11 — Capture sheet v2: smaller, see-through, crafted smoke
+- Sheet is 300dp (about a third of the S24 Ultra screen), full width, no box. Owner: the full-height black sheet killed the vibe.
+- The screen behind stays visible: empty cells are transparent, and a dithered dark haze rises with the smoke (none at the top, near solid under the words). The scrim is a light gradient, not 70 % black.
+- Motion: 1.8 s eased rise with uneven plumes, moonrise through the smoke, two smoke layers at different speeds for depth, voice speeds the drift. On release the smoke detaches from the bottom and drifts away over 1.2 s ("saved" shows for 1.3 s).
+
+### 2026-11-11 — Capture sheet v3: backdrop and fades (picked from a mock)
+- A 40 % dark shade behind the sheet only, as a tall gradient that starts above the sheet (no top edge). It fades in over 0.6 s and out with the smoke.
+- The words fade in 0.25 s after the press, cross-fade to "saved", then fade out with the dissolve. Nothing pops.
+- No hard lines: the text band dims the smoke over 0.3 of the height, the dark under the words builds up to the bottom edge, and rings fade before the top edge.

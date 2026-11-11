@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Yapper identity: smoke dither black and one scarlet. Same names as the design system tokens. -->
+<resources>
+    <color name="yapper_background">#FF0B0A0A</color>
+    <color name="yapper_surface">#FF141213</color>
+    <color name="yapper_surface_raised">#FF1F1A1B</color>
+    <color name="yapper_border">#FF33292A</color>
+    <color name="yapper_edge">#FF7D7273</color>
+    <color name="yapper_smoke">#FF3D3839</color>
+    <color name="yapper_ash">#FF8A8182</color>
+    <color name="yapper_foreground">#FFF4EEEC</color>
+    <color name="yapper_muted">#FFADA2A1</color>
+    <color name="yapper_primary">#FFC0142A</color>
+    <color name="yapper_primary_pressed">#FF96101F</color>
+    <color name="yapper_primary_line">#FFE8394A</color>
+    <color name="yapper_primary_text">#FFFF6B73</color>
+    <color name="yapper_primary_tint">#FF3C0E13</color>
+    <color name="yapper_gold">#FFDCB469</color>
+    <color name="yapper_success">#FF82C29D</color>
+    <color name="yapper_info">#FF87AFD9</color>
+    <color name="yapper_scrim">#660B0A0A</color>
+</resources>

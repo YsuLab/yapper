@@ -282,3 +282,8 @@ Newest first. Format: date — decision — why.
   tagged `%%yap:<id>/<n>%%`, so a retry never appends twice. `_yapper/` is not searched, so answers do not feed back.
 - **Question-only capture → no "Sorted ✓".** A quiet "Looking it up…" that the answer replaces. Answers have their
   own channel with sound, since he is waiting.
+
+### 2026-11-11 — Capture sheet v3: backdrop and fades (picked from a mock)
+- A 40 % dark shade behind the sheet only, as a tall gradient that starts above the sheet (no top edge). It fades in over 0.6 s and out with the smoke.
+- The words fade in 0.25 s after the press, cross-fade to "saved", then fade out with the dissolve. Nothing pops.
+- No hard lines: the text band dims the smoke over 0.3 of the height, the dark under the words builds up to the bottom edge, and rings fade before the top edge.

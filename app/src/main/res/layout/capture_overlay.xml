@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Capture sheet: about a third of the screen at the bottom, no box. The dither field is the sheet:
      smoke rises from the bottom edge and fades out toward the top, so the screen behind stays visible.
-     Words sit in the dark band at the bottom, in mono. -->
+     Words sit in the dark band at the bottom, in mono, and fade in and out. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/scrim_fade"
     android:clickable="true"
     android:focusable="true">
+
+    <!-- Fades in with the smoke and out with it; taller than the sheet so it ramps in softly. -->
+    <View
+        android:id="@+id/capture_backdrop"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/capture_backdrop_height"
+        android:layout_gravity="bottom"
+        android:alpha="0"
+        android:background="@drawable/scrim_fade" />
 
     <FrameLayout
         android:id="@+id/capture_sheet"

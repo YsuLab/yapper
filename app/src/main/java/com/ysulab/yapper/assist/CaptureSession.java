@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.TextView;
 import com.ysulab.yapper.R;
 import com.ysulab.yapper.YapId;
@@ -77,6 +78,7 @@ public class CaptureSession extends VoiceInteractionSession {
     private TextView timer;
     private View dot;
     private DitherView field;
+    private View backdrop;
     private long startedAt;
     private PowerManager.WakeLock screenLock;
 
@@ -92,6 +94,7 @@ public class CaptureSession extends VoiceInteractionSession {
         timer = v.findViewById(R.id.capture_timer);
         dot = v.findViewById(R.id.capture_dot);
         field = v.findViewById(R.id.capture_field);
+        backdrop = v.findViewById(R.id.capture_backdrop);
         SmokeScene scene = field.scene();
         // Smaller sheet over the screen you were on: the moon sits high, the words sit in the dark band below.
         scene.transparent = true;
@@ -130,6 +133,7 @@ public class CaptureSession extends VoiceInteractionSession {
         if (dot != null) {
             dot.setVisibility(View.VISIBLE);
         }
+        fadeIn();
         if (field != null) {
             // Smoke starts to rise the moment the side key is pressed; recording does not wait for it.
             field.press();
@@ -338,11 +342,8 @@ public class CaptureSession extends VoiceInteractionSession {
         if (field != null) {
             field.release();
         }
-        if (dot != null) {
-            dot.setVisibility(View.INVISIBLE);
-        }
         if (!"hidden".equals(reason)) {
-            setText(R.string.capture_got_it, R.string.capture_got_it_hint);
+            fadeToSaved();
             buzz();
             main.postDelayed(this::finish, GOT_IT_MS);
         }
@@ -377,6 +378,65 @@ public class CaptureSession extends VoiceInteractionSession {
     static String clock(long ms) {
         long s = Math.max(0, ms / 1000);
         return String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60);
+    }
+
+    /** Shade fades in with the smoke; the words follow a moment later. Honours "Remove animations". */
+    private void fadeIn() {
+        if (backdrop != null) {
+            backdrop.animate().cancel();
+            backdrop.setAlpha(0f);
+            backdrop.animate().alpha(1f).setStartDelay(0).setDuration(600)
+                    .setInterpolator(new DecelerateInterpolator(1.5f)).start();
+        }
+        for (View w : words()) {
+            w.animate().cancel();
+            w.setAlpha(0f);
+            w.animate().alpha(1f).setStartDelay(250).setDuration(400).start();
+        }
+    }
+
+    /**
+     * After a stop: the words cross-fade to "saved", then everything fades out with the smoke
+     * (the smoke's own dissolve takes 1.2 s; the session closes at {@link #GOT_IT_MS}).
+     */
+    private void fadeToSaved() {
+        if (dot != null) {
+            dot.animate().cancel();
+            dot.animate().alpha(0f).setStartDelay(0).setDuration(200).start();
+        }
+        View[] text = {title, hint};
+        for (View w : text) {
+            if (w != null) {
+                w.animate().cancel();
+                w.animate().alpha(0f).setStartDelay(0).setDuration(200).start();
+            }
+        }
+        main.postDelayed(() -> {
+            setText(R.string.capture_got_it, R.string.capture_got_it_hint);
+            for (View w : text) {
+                if (w != null) {
+                    w.animate().alpha(1f).setStartDelay(0).setDuration(250).start();
+                }
+            }
+        }, 200);
+        main.postDelayed(() -> {
+            for (View w : words()) {
+                w.animate().alpha(0f).setStartDelay(0).setDuration(450).start();
+            }
+            if (backdrop != null) {
+                backdrop.animate().alpha(0f).setStartDelay(0).setDuration(500).start();
+            }
+        }, 750);
+    }
+
+    private List<View> words() {
+        List<View> out = new ArrayList<>();
+        for (View w : new View[] {dot, title, timer, hint}) {
+            if (w != null) {
+                out.add(w);
+            }
+        }
+        return out;
     }
 
     private void setText(int titleRes, int hintRes) {

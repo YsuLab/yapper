@@ -189,16 +189,24 @@ public final class SmokeScene {
 
         for (int y = 0; y < h; y++) {
             float ny = y / (float) h;
-            boolean quiet = ny < quietTop || ny > 1f - quietBottom;
+            // How far into a text band this row is, 0..1. It ramps up over 0.3 of the height before the
+            // band starts, so the smoke dims gradually instead of stopping at a line.
+            float quiet = quietBottom > 0f ? Dither.smoothstep(1f - quietBottom - 0.3f, 1f - quietBottom, ny) : 0f;
+            if (quietTop > 0f) {
+                quiet = Math.max(quiet, 1f - Dither.smoothstep(quietTop, quietTop + 0.3f, ny));
+            }
             // Smoke is thicker near its source and thins as it climbs.
             float fall = 0.55f + 0.45f * ny;
             float detach = 1f - Dither.smoothstep(cut - 0.4f, cut, ny);
             float sway = 0.035f * (float) Math.sin(ny * 5.5f + time * 0.6f);
             // No hard top edge: smoke and haze feather out before the top of the sheet.
             float topFade = Dither.smoothstep(0.0f, 0.4f, ny);
+            // Rings fade out before the top edge instead of being cut off by it.
+            float ringFade = Dither.smoothstep(0.02f, 0.3f, ny);
             float hazeBase = Dither.smoothstep(0.05f, 0.92f, ny);
             // Under the words the haze holds until the very end of the dissolve, so "saved" stays readable.
-            float hazeFloor = Dither.smoothstep(1f - quietBottom - 0.2f, 1f, ny) * e
+            // Solid dark under the words (no see-through specks there), ramping up from just above them.
+            float hazeFloor = Dither.smoothstep(1f - quietBottom - 0.45f, 1.02f, ny) * e
                     * (1f - Dither.smoothstep(0.55f, 1f, exit));
             for (int x = 0; x < w; x++) {
                 float nx = x / (float) w;
@@ -218,11 +226,12 @@ public final class SmokeScene {
                             ink = INK_GROUND;
                         }
                     }
-                    if (ink < 0 && !quiet) {
+                    if (ink < 0 && quiet < 1f) {
                         for (int i = 0; i < n; i++) {
+                            float ra = ringA[i] * ringFade * (1f - quiet);
                             if (Math.abs(dd - ringR[i]) < ringW[i]) {
-                                if (ringA[i] > th) {
-                                    ink = ringA[i] > 0.55f + th * 0.4f ? INK_MOON_LIT : INK_MOON;
+                                if (ra > th) {
+                                    ink = ra > 0.55f + th * 0.4f ? INK_MOON_LIT : INK_MOON;
                                     break;
                                 }
                             }
@@ -244,8 +253,9 @@ public final class SmokeScene {
                         float k = r * fall * lift * density * (1f - push * 0.8f);
                         float v = Math.max(near * k * 2f, Math.min(1f, far * k * 1.3f));
                         int max = 2;
-                        if (quiet) {
-                            v *= 0.4f;
+                        // Under the words: almost no smoke, and never the bright ink.
+                        v *= 1f - 0.85f * quiet;
+                        if (quiet > th) {
                             max = 1;
                         }
                         int base = (int) v;

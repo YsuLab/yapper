@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Behind the capture sheet: the screen you were on stays visible; only a light shade toward the bottom. -->
+<!-- Shade behind the capture sheet: starts above the sheet and ramps in, so it has no top edge.
+     40 % at the bottom (owner's pick). CaptureSession fades the whole view in and out. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
         android:angle="270"
         android:startColor="#000B0A0A"
-        android:centerColor="#1A0B0A0A"
+        android:centerColor="#4D0B0A0A"
         android:endColor="@color/yapper_scrim" />
 </shape>

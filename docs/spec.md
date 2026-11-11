@@ -36,7 +36,7 @@ Rule: **commit first, then offer Undo.** No confirmation screen except for low-c
 - **Ramble mode** — tap to start; records with screen off (foreground service, `microphone` type), stop from
   the notification. Up to ~60 min.
 - **Morning plan / evening debrief** — M5.
-- **Ask your vault** — later.
+- **Ask your vault** — ask by side key ("what did I say about GCP last week?"); the sorter routes it to `ask_vault`, the answer comes back as a notification with links to the source notes.
 
 ## 4. Architecture
 

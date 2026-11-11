@@ -154,6 +154,10 @@ public final class SortWorker extends Worker {
                     x.sorted = "shadow";
                     x.sortSummary = summary;
                 });
+                if (!Summary.questionIndexes(plan).isEmpty()) {
+                    // Answers only go into the capture note, so they run in shadow mode too.
+                    CaptureScheduler.enqueueAnswer(ctx, id);
+                }
                 Notifications.sortResult(ctx, id, "Preview (shadow mode)", summary, m.inboxPath, vault.name(),
                         false);
                 return Result.success();
@@ -184,6 +188,15 @@ public final class SortWorker extends Worker {
             });
             if (pushTodo) {
                 CaptureScheduler.enqueueReminders(ctx, id);
+            }
+            List<Integer> questions = Summary.questionIndexes(plan);
+            if (!questions.isEmpty()) {
+                CaptureScheduler.enqueueAnswer(ctx, id);
+            }
+            if (Summary.onlyQuestions(plan)) {
+                // Just a question: a quiet "Looking it up…" that the answer replaces.
+                Notifications.lookingUp(ctx, id, plan.get(0).question);
+                return Result.success();
             }
             String view = Summary.viewPath(plan);
             Notifications.sortResult(ctx, id, "Sorted ✓", summary, view == null ? m.inboxPath : view,

@@ -31,6 +31,9 @@
     <string name="transcribed_title">Transcript added</string>
     <string name="channel_result">Sorted captures</string>
     <string name="action_view">View</string>
+    <string name="channel_answer">Answers from your vault</string>
+    <string name="looking_up">Looking it up…</string>
+    <string name="action_source">Source</string>
     <string name="action_undo">Undo</string>
 
     <!-- Main screen -->

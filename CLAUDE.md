@@ -25,6 +25,9 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
   sorter prompt so "after Asr" resolves to a clock time.
 - `review/` — weekly review, pure Java: `WeekRange` (Sun–Sat, `Weekly/YYYY-Www.md`), `WeekDigest` (week summary
   from the vault). `work/WeeklyWorker` builds it Saturday and asks for a reflection (`weekly_review` tool).
+- `ask/` — ask your vault, pure Java: `VaultSearch` (keyword + alias + date search over notes), `Asker` (≤ 3 model
+  calls with `search_vault`/`read_note`), `AnswerBlock`. Prompt in `assets/ask/system.md`. `work/AnswerWorker` runs it
+  for each `ask_vault` action and posts the answer notification.
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `server/syncthing/` — VPS sync hub (docker-compose, ignore list). Guide: `docs/vault-sync.md`.

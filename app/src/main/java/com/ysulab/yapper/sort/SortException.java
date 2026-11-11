@@ -10,7 +10,7 @@ public final class SortException extends Exception {
         this.retryable = retryable;
     }
 
-    static boolean isRetryableStatus(int code) {
+    public static boolean isRetryableStatus(int code) {
         return code == 408 || code == 409 || code == 425 || code == 429 || code >= 500;
     }
 }

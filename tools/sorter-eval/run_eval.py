@@ -29,6 +29,15 @@ def read(path):
         return f.read()
 
 
+def prayer_table(day, days=8):
+    # The app computes this on the phone (PrayerTimes.table); the eval uses a fixed copy of its output.
+    lines = read(os.path.join(EVALS, "prayer-times.md")).splitlines()
+    start = [i for i, l in enumerate(lines) if (" %s:" % day.isoformat()) in l]
+    if not start:
+        return "(empty)"
+    return "\n".join(lines[start[0]:start[0] + days])
+
+
 def system_prompt(now, rules, index, daily_path, daily):
     t = read(os.path.join(ASSETS, "system.md"))
     return (t.replace("{{NOW}}", now.isoformat())
@@ -37,7 +46,8 @@ def system_prompt(now, rules, index, daily_path, daily):
             .replace("{{RULES}}", rules.strip() or "(empty)")
             .replace("{{INDEX}}", index.strip() or "(empty)")
             .replace("{{DAILY_PATH}}", daily_path)
-            .replace("{{DAILY}}", daily.strip() or "(empty)"))
+            .replace("{{DAILY}}", daily.strip() or "(empty)")
+            .replace("{{PRAYERS}}", prayer_table(now.date())))
 
 
 def user_text(transcript, screen_text):

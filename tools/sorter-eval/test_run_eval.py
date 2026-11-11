@@ -26,6 +26,9 @@ class ScoreTest(unittest.TestCase):
         self.assertNotIn("{{", sys_text)
         self.assertIn("Monday", sys_text)
         self.assertIn("Tabby/Learning.md", sys_text)
+        self.assertIn("- Mon 2026-11-09: Fajr ", sys_text)
+        self.assertIn("Fri 2026-11-13", sys_text)
+        self.assertNotIn("Tue 2026-11-17", sys_text)  # 8 days only
         self.assertEqual(8, len(body["tools"]))
         self.assertIn("cache_control", body["messages"][0]["content"][0])
         self.assertNotIn("cache_control", run_eval.request(case, "qwen/x")["messages"][0]["content"][0])

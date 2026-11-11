@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.ysulab.yapper.prayer.PrayerTimes;
 import com.ysulab.yapper.transcribe.FakeServer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ public class SorterTest {
         in.rules = "# Yapper rules\n- Uni/ courses";
         in.index = "- Uni/Algorithms.md";
         in.dailyPath = "Daily/2026-11-09.md";
+        in.prayers = PrayerTimes.table(in.now.toLocalDate(), 8);
         return in;
     }
 
@@ -55,6 +57,8 @@ public class SorterTest {
         assertTrue(sys.contains("Monday"));
         assertTrue(sys.contains("- Uni/Algorithms.md"));
         assertTrue(sys.contains("(empty)")); // no daily note yet
+        assertTrue(sys, sys.contains("- Mon 2026-11-09: Fajr "));
+        assertTrue(sys, sys.contains("after X"));
     }
 
     @Test

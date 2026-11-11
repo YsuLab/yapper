@@ -32,7 +32,8 @@ public final class SorterPrompt {
                 .replace("{{RULES}}", orNone(cap(in.rules, MAX_RULES)))
                 .replace("{{INDEX}}", orNone(cap(in.index, MAX_INDEX)))
                 .replace("{{DAILY_PATH}}", in.dailyPath)
-                .replace("{{DAILY}}", orNone(cap(in.daily, MAX_DAILY)));
+                .replace("{{DAILY}}", orNone(cap(in.daily, MAX_DAILY)))
+                .replace("{{PRAYERS}}", orNone(in.prayers));
     }
 
     public static String userText(SorterInput in) {

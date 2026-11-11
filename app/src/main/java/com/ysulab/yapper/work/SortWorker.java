@@ -10,6 +10,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
+import com.ysulab.yapper.prayer.PrayerTimes;
 import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.sort.ActionLog;
 import com.ysulab.yapper.sort.Executor;
@@ -50,6 +51,8 @@ public final class SortWorker extends Worker {
     static final String SORT_INFO = "sort.properties";
     static final String TRANSCRIPT_PREFIX = "transcript-";
     static final int MAX_ATTEMPTS = 12;
+    /** Today plus a week, so "next Friday after Jumuah" still resolves. */
+    static final int PRAYER_DAYS = 8;
     static final String CAPTURES_DIR = VaultIndex.APP_DIR + "/captures";
 
     public SortWorker(@NonNull Context context, @NonNull WorkerParameters params) {
@@ -226,6 +229,8 @@ public final class SortWorker extends Worker {
         }
         in.now = captured;
         in.mode = m.mode;
+        in.prayers = PrayerTimes.table(
+                captured.withZoneSameInstant(PrayerTimes.SAUDI).toLocalDate(), PRAYER_DAYS);
         in.sourceApp = m.sourceApp;
         in.sourceUrl = m.webUri;
         String rules = fs.read(VaultIndex.RULES_PATH);

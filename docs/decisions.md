@@ -2,6 +2,22 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-11 — Prayer-time reminders
+- **Computed on the phone, Umm al-Qura method, Jeddah.** Fajr 18.5°, Asr standard (shadow 1), Isha = Maghrib +
+  90 min (120 in Ramadan, Ramadan read from `java.time.chrono.HijrahDate`, which is the Umm al-Qura calendar).
+  No network and no library: the USNO low-precision sun formulas fit in one pure-Java class (`prayer/PrayerTimes`)
+  and match the published Jeddah table to ±1 minute. Coordinates fixed to Jeddah for now; a location setting can
+  come later if he travels.
+- **The sorter resolves the time, not the app.** The system prompt gets an 8-day table (today + a week, Friday
+  Dhuhr marked Jumuah) and resolution rules. The model already handles "tomorrow", "next Friday" and Arabic
+  phrasing, so it picks the day and the prayer and writes a normal `remind_at`. No new tool, nothing else changes
+  in reminders, To Do sync or alarms. Replaces the old "after Asr → ask_owner" rule.
+- **Offsets: "after X" = X + 30 min, "before X" = X − 15 min, "after Jumuah" = Dhuhr + 45 min, "between Maghrib
+  and Isha" = Maghrib + 30.** "After Asr" means after he has prayed: adhan, about 20 minutes to iqama, then the
+  prayer. A rule in `_yapper/rules.md` overrides these (the rules note wins over the prompt).
+- **Eval uses a fixed copy of the app's table** (`evals/prayer-times.md`) instead of a Python port, so there is
+  one implementation of the astronomy.
+
 ## 2026-11-11 — Second brain (entity notes + links)
 - **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
   person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"

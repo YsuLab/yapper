@@ -48,7 +48,8 @@ public final class Notifications {
             String viewPath, String vaultName, boolean undo) {
         ensureChannels(context);
         Notification.Builder b = new Notification.Builder(context, CHANNEL_RESULT)
-                .setSmallIcon(android.R.drawable.ic_menu_agenda)
+                .setSmallIcon(R.drawable.ic_stat_yapper)
+                .setColor(context.getColor(R.color.yapper_primary))
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new Notification.BigTextStyle().bigText(text))
@@ -98,7 +99,8 @@ public final class Notifications {
     public static Notification working(Context context) {
         ensureChannels(context);
         return new Notification.Builder(context, CHANNEL_WORK)
-                .setSmallIcon(android.R.drawable.ic_popup_sync)
+                .setSmallIcon(R.drawable.ic_stat_yapper)
+                .setColor(context.getColor(R.color.yapper_primary))
                 .setContentTitle(context.getString(R.string.working_title))
                 .setOngoing(true)
                 .build();
@@ -110,7 +112,8 @@ public final class Notifications {
                 new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n = new Notification.Builder(context, CHANNEL_STATUS)
-                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setSmallIcon(R.drawable.ic_stat_yapper)
+                .setColor(context.getColor(R.color.yapper_primary))
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(new Notification.BigTextStyle().bigText(text))

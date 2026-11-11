@@ -69,7 +69,8 @@ public final class Nudges extends BroadcastReceiver {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n = new Notification.Builder(context, CHANNEL)
-                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setSmallIcon(R.drawable.ic_stat_yapper)
+                .setColor(context.getColor(R.color.yapper_primary))
                 .setContentTitle(context.getString(plan ? R.string.nudge_plan_title : R.string.nudge_debrief_title))
                 .setContentText(context.getString(plan ? R.string.nudge_plan_text : R.string.nudge_debrief_text))
                 .setContentIntent(talk)

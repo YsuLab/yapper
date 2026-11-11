@@ -1,119 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Main screen and settings, in the Yapper identity: a dither header, status rows, flat controls. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/yapper_background"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="32dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@drawable/sheet_frame"
+            android:clipToOutline="true">
+
+            <com.ysulab.yapper.ui.DitherView
+                android:id="@+id/home_field"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/home_dot"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/rec_dot" />
+
+                <TextView
+                    android:id="@+id/home_readout"
+                    style="@style/Yapper.Readout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/home_readout_idle" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/build_info"
+                style="@style/Yapper.Readout.Muted"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="14dp" />
+        </FrameLayout>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="28sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/tagline" />
-
-        <TextView
-            android:id="@+id/status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:lineSpacingExtra="4dp"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/btn_permissions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/btn_permissions" />
-
-        <Button
-            android:id="@+id/btn_assistant"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_assistant" />
-
-        <Button
-            android:id="@+id/btn_vault"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_vault" />
-
-        <TextView
+            style="@style/Yapper.ScreenTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="@string/section_talk"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/app_name" />
 
         <TextView
+            style="@style/Yapper.Hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/talk_help"
-            android:textSize="13sp" />
+            android:layout_marginTop="2dp"
+            android:text="@string/tagline" />
+
+        <TextView
+            style="@style/Yapper.SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:text="@string/section_setup" />
+
+        <LinearLayout
+            android:id="@+id/status_rows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/status"
+            style="@style/Yapper.Readout.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:lineSpacingExtra="6sp" />
+
+        <TextView
+            style="@style/Yapper.SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:text="@string/section_talk" />
+
+        <TextView
+            style="@style/Yapper.Hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/talk_help" />
 
         <Button
             android:id="@+id/btn_ramble"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button.Primary"
             android:text="@string/btn_ramble" />
 
         <Button
             android:id="@+id/btn_plan"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_plan" />
 
         <Button
             android:id="@+id/btn_debrief"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_debrief" />
 
         <TextView
+            style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/section_capture"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/section_capture" />
 
         <EditText
             android:id="@+id/silence_seconds"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/hint_silence"
-            android:inputType="numberDecimal" />
+            android:inputType="numberDecimal"
+            android:singleLine="true" />
 
         <TextView
+            style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/section_transcribers"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/section_transcribers" />
 
         <TextView
+            style="@style/Yapper.Hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/transcribers_help"
-            android:textSize="13sp" />
+            android:text="@string/transcribers_help" />
 
         <CheckBox
             android:id="@+id/compare_all"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/compare_all" />
 
@@ -124,18 +163,17 @@
             android:orientation="vertical" />
 
         <TextView
+            style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/section_sorter"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/section_sorter" />
 
         <TextView
+            style="@style/Yapper.Hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/sorter_help"
-            android:textSize="13sp" />
+            android:text="@string/sorter_help" />
 
         <EditText
             android:id="@+id/sorter_url"
@@ -163,36 +201,34 @@
 
         <CheckBox
             android:id="@+id/sorter_shadow"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/sorter_shadow" />
 
         <CheckBox
             android:id="@+id/sorter_move"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/sorter_move" />
 
         <CheckBox
             android:id="@+id/sorter_screens"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/sorter_screens" />
 
-
         <TextView
+            style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/section_reminders"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/section_reminders" />
 
         <TextView
+            style="@style/Yapper.Hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/reminders_help"
-            android:textSize="13sp" />
+            android:text="@string/reminders_help" />
 
         <EditText
             android:id="@+id/ms_client_id"
@@ -204,26 +240,22 @@
 
         <Button
             android:id="@+id/btn_ms_sign_in"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_ms_sign_in" />
 
         <Button
             android:id="@+id/btn_ms_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_ms_list" />
 
         <Button
             android:id="@+id/btn_ms_test"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_ms_test" />
 
         <Button
             android:id="@+id/btn_ms_sign_out"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_ms_sign_out" />
 
         <EditText
@@ -235,18 +267,17 @@
             android:singleLine="true" />
 
         <TextView
+            style="@style/Yapper.SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/section_today"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:accessibilityHeading="true"
+            android:text="@string/section_today" />
 
         <TextView
+            style="@style/Yapper.Hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/today_help"
-            android:textSize="13sp" />
+            android:text="@string/today_help" />
 
         <EditText
             android:id="@+id/nudge_morning"
@@ -264,26 +295,20 @@
             android:inputType="time"
             android:singleLine="true" />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="28dp"
+            android:background="@color/yapper_border" />
+
         <Button
             android:id="@+id/btn_save"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            style="@style/Yapper.Button.Primary"
             android:text="@string/btn_save" />
 
         <Button
             android:id="@+id/btn_retry"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/Yapper.Button"
             android:text="@string/btn_retry" />
-
-        <TextView
-            android:id="@+id/build_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:fontFamily="monospace"
-            android:gravity="center"
-            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

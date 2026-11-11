@@ -1,45 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Capture sheet: the sheet itself is the dither field (moon ripples). Words sit in the corners, in mono. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#66000000"
+    android:background="@color/yapper_scrim"
     android:clickable="true"
     android:focusable="true">
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/capture_sheet"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="440dp"
         android:layout_gravity="bottom"
-        android:layout_margin="16dp"
-        android:background="@drawable/overlay_card"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_margin="12dp"
+        android:background="@drawable/sheet_frame"
+        android:clipToOutline="true">
 
-        <TextView
-            android:id="@+id/capture_title"
+        <com.ysulab.yapper.ui.DitherView
+            android:id="@+id/capture_field"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/capture_listening"
-            android:textColor="#FFFFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:layout_gravity="top|start"
+            android:layout_margin="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <View
-            android:id="@+id/capture_meter"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="16dp"
-            android:background="#FF7FD1AE"
-            android:scaleX="0.04"
-            android:transformPivotX="0dp" />
+            <View
+                android:id="@+id/capture_dot"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/rec_dot" />
+
+            <TextView
+                android:id="@+id/capture_title"
+                style="@style/Yapper.Readout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:text="@string/capture_listening" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/capture_timer"
+            style="@style/Yapper.Readout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp"
+            android:text="0:00" />
 
         <TextView
             android:id="@+id/capture_hint"
-            android:layout_width="wrap_content"
+            style="@style/Yapper.Readout.Muted"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/capture_hint"
-            android:textColor="#CCFFFFFF"
-            android:textSize="14sp" />
-    </LinearLayout>
+            android:layout_gravity="bottom|start"
+            android:layout_margin="16dp"
+            android:text="@string/capture_hint" />
+    </FrameLayout>
 </FrameLayout>

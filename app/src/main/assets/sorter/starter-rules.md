@@ -13,6 +13,11 @@ Yapper reads this note before sorting every capture. Edit it in Obsidian to chan
 - Personal/ — everything else.
 - Daily/ — daily notes, YYYY-MM-DD.md (plans, debriefs).
 
+## Second brain
+- Keep a note per person (People/), project (Projects/), course (Uni/) and tool/company/topic (Topics/).
+  Tabby itself → Tabby/Tabby.md.
+- Link everything with [[wikilinks]].
+
 ## Routing
 - Prefer appending to an existing note over creating a new one.
 - Anything with a time → reminder, plus a line in today's daily note.

@@ -18,6 +18,8 @@ public final class SortAction {
     public static final String PLAN = "plan_day";
     /** M5 debrief: tick a "- [ ]" task in a daily note. */
     public static final String CHECK = "complete_task";
+    /** Second brain: keep a note per person/project/tool/place he mentions, with facts and links. */
+    public static final String ENTITY = "link_entity";
 
     /** One plan_day time block. */
     public static final class Block {
@@ -40,6 +42,14 @@ public final class SortAction {
     public String question = "";
     public final List<String> options = new ArrayList<>();
     public final List<Block> blocks = new ArrayList<>();
+    /** link_entity: person, project, org, course, tool, place or topic. */
+    public String kind = "";
+    /** link_entity: one line about what this is (only used when the note is new). */
+    public String summary = "";
+    /** link_entity: other names for it (Arabic spelling, short forms). */
+    public final List<String> aliases = new ArrayList<>();
+    /** link_entity: names of related entities or notes to link to. */
+    public final List<String> related = new ArrayList<>();
 
     public SortAction(String tool) {
         this.tool = tool;
@@ -114,6 +124,21 @@ public final class SortAction {
                 String d = a.optString("date", "").trim();
                 s.date = d.isEmpty() ? "" : date(d);
                 break;
+            case ENTITY:
+                s.title = com.ysulab.yapper.vault.EntityIndex.clean(req(a, "name"));
+                if (s.title.isEmpty() || s.title.length() > 80) {
+                    throw new JSONException("bad name " + s.title);
+                }
+                s.kind = oneLine(a.optString("kind", "topic")).toLowerCase(java.util.Locale.ROOT);
+                s.summary = oneLine(a.optString("summary", ""));
+                s.markdown = a.optString("fact", "").trim();
+                String p = a.optString("path", "").trim();
+                // No path: a default folder per kind. The executor still prefers an existing note
+                // with this name or alias, so "GCP" lands in the note that already has that alias.
+                s.path = SafePath.normalize(p.isEmpty() ? entityFolder(s.kind) + "/" + s.title.replace('/', '-') : p);
+                names(a.optJSONArray("aliases"), s.aliases, s.title);
+                names(a.optJSONArray("related"), s.related, s.title);
+                break;
             default:
                 throw new JSONException("unknown tool " + name);
         }
@@ -137,6 +162,12 @@ public final class SortAction {
                     .put("alarm", k.alarm));
         }
         o.put("blocks", b);
+        if (ENTITY.equals(tool)) {
+            o.put("kind", kind);
+            o.put("summary", summary);
+            o.put("aliases", new JSONArray(aliases));
+            o.put("related", new JSONArray(related));
+        }
         return o;
     }
 
@@ -168,7 +199,46 @@ public final class SortAction {
                 s.blocks.add(k);
             }
         }
+        s.kind = o.optString("kind", "");
+        s.summary = o.optString("summary", "");
+        strings(o.optJSONArray("aliases"), s.aliases);
+        strings(o.optJSONArray("related"), s.related);
         return s;
+    }
+
+    private static void strings(JSONArray a, List<String> out) {
+        if (a != null) {
+            for (int i = 0; i < a.length(); i++) {
+                out.add(a.optString(i));
+            }
+        }
+    }
+
+    /** Default home for a new entity note when the rules and the index do not give one. */
+    static String entityFolder(String kind) {
+        switch (kind) {
+            case "person":
+                return "People";
+            case "project":
+                return "Projects";
+            case "course":
+                return "Uni";
+            default:
+                return "Topics";
+        }
+    }
+
+    /** Clean, unique names, skipping the entity's own name. */
+    private static void names(JSONArray a, List<String> out, String self) {
+        if (a == null) {
+            return;
+        }
+        for (int i = 0; i < a.length() && out.size() < 20; i++) {
+            String n = com.ysulab.yapper.vault.EntityIndex.clean(a.optString(i, ""));
+            if (!n.isEmpty() && n.length() <= 80 && !n.equalsIgnoreCase(self) && !out.contains(n)) {
+                out.add(n);
+            }
+        }
     }
 
     public static String toJsonArray(List<SortAction> actions) throws JSONException {

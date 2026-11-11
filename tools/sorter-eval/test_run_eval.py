@@ -26,7 +26,7 @@ class ScoreTest(unittest.TestCase):
         self.assertNotIn("{{", sys_text)
         self.assertIn("Monday", sys_text)
         self.assertIn("Tabby/Learning.md", sys_text)
-        self.assertEqual(7, len(body["tools"]))
+        self.assertEqual(8, len(body["tools"]))
         self.assertIn("cache_control", body["messages"][0]["content"][0])
         self.assertNotIn("cache_control", run_eval.request(case, "qwen/x")["messages"][0]["content"][0])
 

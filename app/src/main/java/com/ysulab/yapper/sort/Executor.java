@@ -1,6 +1,7 @@
 package com.ysulab.yapper.sort;
 
 import com.ysulab.yapper.YapId;
+import com.ysulab.yapper.vault.EntityIndex;
 import com.ysulab.yapper.vault.VaultFs;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -31,12 +32,20 @@ public final class Executor {
     /** Capture note name without ".md", for back-links from Inbox.md questions. */
     private final String captureNote;
     private final ZonedDateTime now;
+    /** Existing notes by name and alias, so link_entity reuses notes instead of duplicating them. */
+    private EntityIndex entities = new EntityIndex();
 
     public Executor(VaultFs fs, String captureId, String captureNote, ZonedDateTime now) {
         this.fs = fs;
         this.captureId = captureId;
         this.captureNote = captureNote;
         this.now = now;
+    }
+
+    /** Names and aliases of the vault's notes (from {@code _yapper/index.md}). */
+    public Executor withEntities(EntityIndex index) {
+        this.entities = index == null ? new EntityIndex() : index;
+        return this;
     }
 
     public static String dailyPath(String date) {
@@ -73,6 +82,9 @@ public final class Executor {
                 case SortAction.CHECK:
                     check(log, a, marker);
                     break;
+                case SortAction.ENTITY:
+                    entity(log, a, marker);
+                    break;
                 default:
                     break;
             }
@@ -92,6 +104,85 @@ public final class Executor {
         String text = body + "\n\n" + marker + "\n";
         fs.create(a.path, text);
         log.add("create", a.path, text, a.tool);
+    }
+
+    /**
+     * Second brain: the note for a person, project, tool or place. Existing note (by name or alias,
+     * any case) → one dated log line with the fact, links to related notes and a link back to the
+     * capture. No note yet → a new one with aliases, a summary, "## Related" and "## Log".
+     * Append/create only, like every other write.
+     */
+    private void entity(ActionLog log, SortAction a, String marker) throws IOException {
+        String path = entities.find(a.title);
+        for (int k = 0; path == null && k < a.aliases.size(); k++) {
+            path = entities.find(a.aliases.get(k));
+        }
+        if (path == null) {
+            path = a.path;
+        }
+        String current = fs.read(path);
+        if (current == null) {
+            String text = newEntityNote(a) + "\n" + marker + "\n";
+            fs.create(path, text);
+            log.add("create", path, text, a.tool);
+        } else if (!current.contains(marker)) {
+            String line = entityLine(a, true);
+            if (!line.isEmpty()) {
+                write(log, a.tool, path, "", line, marker, true, null);
+            }
+        }
+        entities.add(path, a.title, a.aliases);
+        a.path = path; // so the summary links the note actually used
+    }
+
+    private String newEntityNote(SortAction a) {
+        StringBuilder sb = new StringBuilder("---\n");
+        if (!a.aliases.isEmpty()) {
+            sb.append("aliases:\n");
+            for (String al : a.aliases) {
+                sb.append("  - \"").append(al.replace("\"", "'")).append("\"\n");
+            }
+        }
+        String kind = a.kind.replaceAll("[^a-z0-9-]", "");
+        sb.append("type: ").append(kind.isEmpty() ? "topic" : kind).append('\n');
+        sb.append("tags:\n  - entity\n");
+        sb.append("---\n# ").append(a.title).append("\n\n");
+        if (!a.summary.isEmpty()) {
+            sb.append(a.summary).append("\n\n");
+        }
+        if (!a.related.isEmpty()) {
+            sb.append("## Related\n");
+            for (String r : a.related) {
+                sb.append("- ").append(entities.link(r)).append('\n');
+            }
+            sb.append('\n');
+        }
+        sb.append("## Log\n");
+        String line = entityLine(a, false);
+        if (!line.isEmpty()) {
+            sb.append("\n### ").append(now.format(DAY)).append('\n').append(line).append('\n');
+        }
+        return sb.toString();
+    }
+
+    /** "- fact · [[A]], [[B]] [[capture|🎙]]" (related links only when the note already existed). */
+    private String entityLine(SortAction a, boolean withRelated) {
+        StringBuilder sb = new StringBuilder();
+        String fact = a.markdown.trim();
+        if (!fact.isEmpty()) {
+            sb.append(fact.startsWith("- ") ? "" : "- ").append(fact);
+        }
+        if (withRelated && !a.related.isEmpty()) {
+            List<String> links = new java.util.ArrayList<>();
+            for (String r : a.related) {
+                links.add(entities.link(r));
+            }
+            sb.append(sb.length() == 0 ? "- Related: " : " · ").append(String.join(", ", links));
+        }
+        if (sb.length() > 0 && !captureNote.isEmpty()) {
+            sb.append(" [[").append(captureNote).append("|🎙]]");
+        }
+        return sb.toString();
     }
 
     private void reminder(ActionLog log, SortAction a, String marker) throws IOException {

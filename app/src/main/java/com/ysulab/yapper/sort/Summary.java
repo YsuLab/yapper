@@ -25,6 +25,7 @@ public final class Summary {
         int questions = 0;
         int blocks = 0;
         int done = 0;
+        Set<String> linked = new LinkedHashSet<>();
         for (SortAction a : plan) {
             switch (a.tool) {
                 case SortAction.APPEND:
@@ -45,6 +46,9 @@ public final class Summary {
                     break;
                 case SortAction.CHECK:
                     done++;
+                    break;
+                case SortAction.ENTITY:
+                    linked.add(a.title);
                     break;
                 default:
                     break;
@@ -68,6 +72,9 @@ public final class Summary {
         }
         if (questions > 0) {
             parts.add(plural(questions, "question") + " in Inbox.md");
+        }
+        if (!linked.isEmpty()) {
+            parts.add("Linked " + String.join(", ", linked));
         }
         return parts.isEmpty() ? "Nothing to file" : String.join(" · ", parts);
     }
@@ -169,6 +176,8 @@ public final class Summary {
             }
             case SortAction.CHECK:
                 return "Done ✓ " + a.title;
+            case SortAction.ENTITY:
+                return "Linked " + link(a.path) + (a.markdown.isEmpty() ? "" : ": " + oneLine(a.markdown));
             default:
                 return a.tool;
         }

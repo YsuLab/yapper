@@ -15,7 +15,7 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
 - `work/` — WorkManager: `InboxWorker` (vault note, offline), `TranscribeWorker` (network), `CaptureScheduler.reconcile`.
 - `vault/` — `VaultAccess` (SAF, append/create only), `InboxNote` (markdown, pure Java), `VaultFs` (path API;
   `SafVaultFs` on the phone, `MemoryVaultFs` in tests), `VaultIndex` (`_yapper/index.md`).
-- `sort/` — M2 sorter, pure Java: `Sorter` (OpenAI-compatible `/chat/completions` + tool calls), `SorterPrompt`,
+- `sort/` — M2 sorter, pure Java (+ second brain: `link_entity` → entity notes via `vault/EntityIndex`): `Sorter` (OpenAI-compatible `/chat/completions` + tool calls), `SorterPrompt`,
   `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
   `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.

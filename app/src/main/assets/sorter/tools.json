@@ -202,5 +202,63 @@
         ]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "link_entity",
+      "description": "Second brain: keep the note for one person, project, company, course, tool or place he mentions. Finds the existing note by name or alias (appends a dated fact with links) or creates it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Canonical name, e.g. Tabby, GCP, Claude, Dr. Ahmed"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "project",
+              "org",
+              "course",
+              "tool",
+              "place",
+              "topic"
+            ]
+          },
+          "fact": {
+            "type": "string",
+            "description": "One short line learned from this capture, may contain [[wikilinks]]. Optional."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One line on what it is, used only when the note is new"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other names: Arabic spelling, short or full forms"
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of related entities or notes to link, e.g. [\"Tabby\"]"
+          },
+          "path": {
+            "type": "string",
+            "description": "Only if the rules or index give a clear home, e.g. Projects/Sadeem.md"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ]
+      }
+    }
   }
 ]

@@ -156,7 +156,8 @@ public final class SortWorker extends Worker {
             }
 
             ActionLog log = ActionLog.parse(store.readText(id, ACTIONS));
-            Executor ex = new Executor(fs, id, noteName(m.inboxPath), captured);
+            Executor ex = new Executor(fs, id, noteName(m.inboxPath), captured)
+                    .withEntities(com.ysulab.yapper.vault.EntityIndex.fromIndex(fs.read(VaultIndex.INDEX_PATH)));
             boolean pushTodo;
             try {
                 ex.execute(plan, log);

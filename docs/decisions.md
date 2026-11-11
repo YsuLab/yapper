@@ -2,6 +2,23 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-11 — Second brain (entity notes + links)
+- **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
+  person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"
+  notes that build themselves, with note-to-note links (e.g. GCP ↔ Tabby).
+- **The app, not the model, decides "existing or new".** `EntityIndex` reads names, titles and aliases from
+  `_yapper/index.md` (case-insensitive, Arabic diacritics ignored), so "gcp" lands in `Topics/Google Cloud.md` if
+  that note has the alias. Avoids duplicate notes, which the model alone produces easily.
+- **New entity note** = frontmatter (`aliases`, `type`, `tags: entity`), `# Name`, one-line summary, `## Related`
+  links, `## Log` with a dated fact. **Existing note** = one appended dated line: fact · related links · 🎙 link
+  back to the capture. Append/create only; frontmatter of existing notes is never touched.
+- **Default folders when rules/index give no home:** People/, Projects/, Uni/ (courses), Topics/ (everything
+  else). The owner's `rules.md` wins; the starter rules now document this.
+- **Dense linking in every block is a prompt rule** (wrap entity names in `[[ ]]`), not a regex auto-linker:
+  a regex would mislink partial words, code and Arabic.
+- **Undo** reuses the action log: a created entity note is deleted only if unchanged; if a later capture added to
+  it, only our exact text is removed.
+
 ## 2026-11-09 — M3–M5 (one release)
 - **M3, M4 and M5 ship as one PR and one APK.** Owner asked for a single build to test instead of one per
   milestone (reinstalls are tiring). Overrides "one milestone = one PR" for these three.

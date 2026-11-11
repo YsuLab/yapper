@@ -2,6 +2,22 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-11 — Vault sync through the VPS
+- **Syncthing (Docker, `syncthing/syncthing:2`) on the VPS as the always-on hub**, Syncthing-Fork on phone and
+  tablet, Syncthing on the PC. Confirms the M1 recommendation. Not self-hosted LiveSync/CouchDB: it only syncs
+  while Obsidian runs, so Yapper's background writes would wait; it also adds a database to run. Owner prefers
+  the VPS for data.
+- **Web UI bound to 127.0.0.1, reached by SSH tunnel.** Only 22000 tcp/udp is open. Smallest attack surface.
+- **Staggered versioning (365 days) on the VPS only.** One place holds every overwritten version.
+- **Ignore `.obsidian/workspace*.json` and `.trash`.** Per-device layout files conflict on every switch.
+- **Every vault append is read back and retried (max 3) if the block is missing** (`SyncSafety.appendVerified`).
+  Syncthing replaces files by temp-file + rename, so an append racing a sync can land in the orphaned old file.
+  Blocks are unique (`%%yap%%` marker / timed heading), so "present" means "written" and a retry can't double.
+  After 3 misses the worker fails and WorkManager retries; the capture bundle stays.
+- **Syncthing conflict copies are skipped by the index and listed in `_yapper/sync-conflicts.md`** (our own file,
+  rewritten only when the list changes). The sorter never files into a copy, and a Yapper block that ended up in
+  a copy is one tap away. Yapper never merges or deletes copies itself (would mean rewriting owner text).
+
 ## 2026-11-11 — Second brain (entity notes + links)
 - **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
   person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"

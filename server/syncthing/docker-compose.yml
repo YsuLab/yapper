@@ -1,0 +1,25 @@
+# Syncthing hub for the Obsidian vault. Runs on the VPS; phone, tablet and PC all sync through it.
+# Guide: docs/vault-sync.md
+#
+#   cd ~/yapper-sync && docker compose up -d
+#
+# The web UI listens on 127.0.0.1 only. Reach it through an SSH tunnel:
+#   ssh -L 8384:127.0.0.1:8384 you@your-vps   →   http://localhost:8384
+services:
+  syncthing:
+    image: syncthing/syncthing:2
+    container_name: syncthing
+    hostname: yapper-vps
+    environment:
+      - PUID=1000            # `id -u` of the user that owns ./data
+      - PGID=1000            # `id -g` of that user
+      - STGUIADDRESS=127.0.0.1:8384
+    volumes:
+      - ./data:/var/syncthing   # config in ./data/config, the vault in ./data/vault
+    network_mode: host          # recommended by Syncthing; sync port 22000 tcp+udp
+    restart: unless-stopped
+    healthcheck:
+      test: curl -fkLsS -m 2 127.0.0.1:8384/rest/noauth/health | grep -o --color=never OK || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3

@@ -60,7 +60,14 @@ public final class SafVaultFs implements VaultFs {
         if (f == null) {
             throw new IOException("Missing: " + path);
         }
-        vault.append(f, text);
+        // Read back and retry if a sync tool replaced the file mid-append (see SyncSafety).
+        SyncSafety.appendVerified(this, (p, t) -> {
+            DocumentFile now = vault.findPath(p);
+            if (now == null) {
+                throw new IOException("Missing: " + p);
+            }
+            vault.append(now, t);
+        }, path, text);
     }
 
     @Override
@@ -150,9 +157,11 @@ public final class SafVaultFs implements VaultFs {
         JSONObject next = new JSONObject();
         List<String> folders = new ArrayList<>();
         List<String> entries = new ArrayList<>();
+        List<String> conflicts = new ArrayList<>();
         Uri tree = vault.root().getUri();
         String rootId = DocumentsContract.getDocumentId(tree);
-        walk(tree, rootId, "", folders, entries, cache, next);
+        walk(tree, rootId, "", folders, entries, conflicts, cache, next);
+        writeConflictReport(conflicts);
         try {
             File tmp = new File(cacheFile.getPath() + ".tmp");
             Files.write(tmp.toPath(), next.toString().getBytes(StandardCharsets.UTF_8));
@@ -172,8 +181,32 @@ public final class SafVaultFs implements VaultFs {
         return text;
     }
 
+    /** Keeps {@code _yapper/sync-conflicts.md} current. Our own file; only written when it changes. */
+    private void writeConflictReport(List<String> conflicts) {
+        try {
+            java.util.Collections.sort(conflicts);
+            DocumentFile f = vault.findPath(SyncSafety.REPORT_PATH);
+            if (conflicts.isEmpty() && f == null) {
+                return; // nothing to report and nothing to update
+            }
+            String oldText = f == null ? "" : vault.read(f);
+            if (!oldText.isEmpty() && SyncSafety.sameConflicts(oldText, conflicts)) {
+                return;
+            }
+            String text = SyncSafety.report(conflicts,
+                    java.time.LocalDateTime.now().withNano(0).toString().replace('T', ' '));
+            if (f == null) {
+                create(SyncSafety.REPORT_PATH, text);
+            } else {
+                vault.write(f, text);
+            }
+        } catch (IOException | RuntimeException e) {
+            // the report is a convenience; never block sorting on it
+        }
+    }
+
     private void walk(Uri tree, String docId, String prefix, List<String> folders, List<String> entries,
-            JSONObject cache, JSONObject next) {
+            List<String> conflicts, JSONObject cache, JSONObject next) {
         ContentResolver cr = vault.context().getContentResolver();
         Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
         String[] cols = {
@@ -195,6 +228,10 @@ public final class SafVaultFs implements VaultFs {
                 long modified = c.isNull(3) ? 0 : c.getLong(3);
                 long size = c.isNull(4) ? 0 : c.getLong(4);
                 String path = prefix + name;
+                if (name != null && name.toLowerCase(java.util.Locale.ROOT).contains(".sync-conflict-")
+                        && !VaultIndex.hidden(path)) {
+                    conflicts.add(path);
+                }
                 if (name == null || VaultIndex.skip(path)) {
                     continue;
                 }
@@ -225,7 +262,7 @@ public final class SafVaultFs implements VaultFs {
         }
         for (Map.Entry<String, String> d : dirs.entrySet()) {
             folders.add(d.getKey());
-            walk(tree, d.getValue(), d.getKey() + "/", folders, entries, cache, next);
+            walk(tree, d.getValue(), d.getKey() + "/", folders, entries, conflicts, cache, next);
         }
     }
 

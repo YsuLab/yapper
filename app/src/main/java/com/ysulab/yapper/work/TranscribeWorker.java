@@ -13,6 +13,7 @@ import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.transcribe.Transcriber;
 import com.ysulab.yapper.transcribe.TranscriptionException;
 import com.ysulab.yapper.vault.InboxNote;
+import com.ysulab.yapper.vault.SafVaultFs;
 import com.ysulab.yapper.vault.VaultAccess;
 import java.io.File;
 import java.io.IOException;
@@ -161,12 +162,12 @@ public final class TranscribeWorker extends Worker {
         String[] dirs = new String[parts.length - 1];
         System.arraycopy(parts, 0, dirs, 0, dirs.length);
         DocumentFile dir = vault.dir(dirs);
-        DocumentFile note = vault.find(dir, parts[parts.length - 1]);
-        if (note == null) {
+        if (vault.find(dir, parts[parts.length - 1]) == null) {
             // The owner moved or deleted the note: keep the transcript in a new note instead.
-            note = vault.createNote(dir, parts[parts.length - 1], "", "%%none%%");
+            vault.createNote(dir, parts[parts.length - 1], "", "%%none%%");
         }
-        vault.append(note, block);
+        // Through SafVaultFs so the append is read back and retried if sync replaced the file.
+        new SafVaultFs(vault).append(path, block);
     }
 
     @NonNull

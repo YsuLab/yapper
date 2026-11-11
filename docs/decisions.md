@@ -2,6 +2,27 @@
 
 Newest first. Format: date — decision — why.
 
+## 2026-11-11 — Share to Yapper
+- **Android share target (`ShareActivity`) for text, images, PDFs and any file, one or many.** WhatsApp sends
+  text as `ACTION_SEND` text/plain and mixed selections as `ACTION_SEND_MULTIPLE` */*. Owner gets timetables
+  and tasks through WhatsApp and wanted them in without the side key.
+- **Same sheet as the side key, mic already listening.** Zero extra taps for a voice note ("this is the new
+  timetable, remind me before each quiz"). Silence, no speech (6 s), a tap or Back ends it. Back means "done",
+  not "cancel": the share is saved the moment it arrives.
+- **Copy first, then everything else.** Files are streamed into the capture bundle (`shared-01.jpg` …,
+  `shared.txt`) before the job is queued, and the activity stays open until the copy ends, because the read
+  grant on a shared `content://` URI ends with the receiving activity. Limits: 10 files, 25 MB each; the rest
+  is counted and noted in the Inbox note, not silently dropped. Only `content://` URIs are read.
+- **No speech → audio is not transcribed.** The file stays in the bundle, but a transcriber would invent text
+  from silence. A share without a voice note skips transcription and goes straight to the sorter.
+- **Sorter gets the shared content, not the screen.** Shared text, vault file names (so the note it writes can
+  embed the original with `![[name]]`), up to 4 images at ≤1600 px (timetables need small print; screenshots
+  stay at 720 px), and one PDF ≤5 MB as an OpenRouter `file` part. PDFs only go to OpenRouter, which reads them
+  for any model; other OpenAI-compatible servers would reject the part. Shared images are sent regardless of
+  the "screenshots" setting: the owner chose to share them.
+- **Recurring weekly timetables are typed out as a table, not one reminder per slot**, unless the voice note
+  asks for reminders. One-off dated items (exam, deadline, moved lecture) do become reminders.
+
 ## 2026-11-11 — Second brain (entity notes + links)
 - **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
   person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"

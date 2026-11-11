@@ -11,6 +11,7 @@ import com.ysulab.yapper.R;
 import com.ysulab.yapper.YapId;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
+import com.ysulab.yapper.capture.SharedItems;
 import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.vault.InboxNote;
 import com.ysulab.yapper.vault.VaultAccess;
@@ -70,9 +71,19 @@ public final class InboxWorker extends Worker {
             if (hasShot) {
                 vault.copyIn(attachments, InboxNote.screenshotName(m), shot);
             }
+            // Shared from another app: copy each file next to the audio. Only files that made it into
+            // the bundle are listed in meta, so a missing one here means the bundle was damaged.
+            for (String shared : m.sharedFiles) {
+                File f = store.file(id, shared);
+                if (f.isFile()) {
+                    vault.copyIn(attachments, SharedItems.vaultName(id, shared), f);
+                }
+            }
             String screenText = store.readText(id, CaptureStore.SCREEN_TEXT);
+            String sharedText = store.readText(id, SharedItems.TEXT_FILE);
             String name = InboxNote.fileName(m);
-            vault.createNote(inbox, name, InboxNote.build(m, screenText, hasShot, hasAudio), YapId.marker(id));
+            vault.createNote(inbox, name, InboxNote.build(m, screenText, hasShot, hasAudio, sharedText),
+                    YapId.marker(id));
 
             String path = InboxNote.INBOX_DIR + "/" + name;
             store.update(id, x -> {

@@ -162,7 +162,10 @@ public final class CaptureScheduler {
                     enqueueInbox(context, id);
                 } else if (m.state == CaptureMeta.State.INBOX && !m.pendingTranscribers(active).isEmpty()) {
                     enqueueTranscribe(context, id);
-                } else if (m.state == CaptureMeta.State.DONE && !m.pendingTranscribers(active).isEmpty()) {
+                } else if (m.state == CaptureMeta.State.INBOX && m.parts().isEmpty() && m.hasShared()) {
+                    enqueueTranscribe(context, id); // moves a voice-less share on to DONE
+                } else if (m.state == CaptureMeta.State.DONE && !m.pendingTranscribers(active).isEmpty()
+                        && !m.parts().isEmpty()) {
                     // A new transcriber was added later: run it on old captures too (benchmark).
                     store.update(id, x -> x.state = CaptureMeta.State.INBOX);
                     enqueueTranscribe(context, id);
@@ -171,7 +174,8 @@ public final class CaptureScheduler {
                         m = store.update(id, x -> x.sorted = "");
                     }
                     // Only captures transcribed by an M2 build (transcript saved in the bundle).
-                    if ((m.sorted.isEmpty() || "planned".equals(m.sorted)) && SortWorker.hasTranscript(store, id)) {
+                    if ((m.sorted.isEmpty() || "planned".equals(m.sorted))
+                            && (SortWorker.hasTranscript(store, id) || m.hasShared())) {
                         enqueueSort(context, id);
                     }
                 }

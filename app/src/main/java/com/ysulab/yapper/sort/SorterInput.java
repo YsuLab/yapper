@@ -15,6 +15,15 @@ public final class SorterInput {
     public String index = "";
     public String dailyPath = "";
     public String daily = "";
-    /** "" (quick capture), "ramble", "plan" or "debrief" (M4/M5). */
+    /** Text shared from another app (share mode). */
+    public String sharedText = "";
+    /** Vault names of the shared files, so the model can embed them with ![[name]]. */
+    public java.util.List<String> sharedFiles = new java.util.ArrayList<>();
+    /** Shared images as JPEG base64 (downscaled), at most SharedItems.MAX_IMAGES_TO_SORTER. */
+    public java.util.List<String> sharedImagesBase64 = new java.util.ArrayList<>();
+    /** One shared PDF as base64, or null. Only sent to OpenRouter (it reads PDFs for any model). */
+    public String sharedPdfBase64;
+    public String sharedPdfName = "";
+    /** "" (quick capture), "ramble", "plan", "debrief" (M4/M5) or "share". */
     public String mode = "";
 }

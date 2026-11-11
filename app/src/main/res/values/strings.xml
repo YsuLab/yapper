@@ -13,6 +13,11 @@
     <string name="capture_mic_busy_readout">microphone busy · call or recorder</string>
     <string name="capture_no_mic_hint">Open Yapper and allow the microphone.</string>
     <string name="capture_mic_busy_hint">The microphone is busy (call or another recorder).</string>
+    <string name="share_label">Yapper</string>
+    <string name="share_saving">saving share</string>
+    <string name="share_saved">saved · %1$s</string>
+    <string name="share_hint">talk to add a note · or tap to finish</string>
+    <string name="share_nothing">nothing to save in this share</string>
     <string name="capture_failed">not saved</string>
     <string name="capture_failed_hint">phone storage error · nothing recorded</string>
 

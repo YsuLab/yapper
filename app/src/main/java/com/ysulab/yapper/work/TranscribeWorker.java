@@ -59,6 +59,18 @@ public final class TranscribeWorker extends Worker {
             }
         }
         List<Transcriber> active = settings.transcribers();
+        if (audio.isEmpty() && m.hasShared()) {
+            // A share without a voice note: nothing to transcribe, go straight to the sorter.
+            try {
+                store.update(id, x -> x.advanceTo(CaptureMeta.State.DONE));
+            } catch (IOException e) {
+                return Result.retry();
+            }
+            if (settings.sorter().isConfigured()) {
+                CaptureScheduler.enqueueSort(ctx, id);
+            }
+            return Result.success();
+        }
         if (audio.isEmpty() || active.isEmpty()) {
             // Nothing to transcribe, or no provider yet. reconcile() re-queues when a key is added.
             return Result.success();

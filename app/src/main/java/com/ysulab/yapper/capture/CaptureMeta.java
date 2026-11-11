@@ -40,7 +40,16 @@ public final class CaptureMeta {
      * capture, which has only {@link #audioFile}. Use {@link #parts()}.
      */
     public final List<String> audioParts = new ArrayList<>();
-    /** "" (quick capture), "ramble", "plan" (morning plan) or "debrief" (evening). */
+    /**
+     * Shared from another app: bundle file names ({@code shared-01.jpg} …), in order. See
+     * {@link SharedItems}.
+     */
+    public final List<String> sharedFiles = new ArrayList<>();
+    /** Characters of shared text in {@code shared.txt}; 0 when the share had none. */
+    public int sharedTextChars;
+    /** Files in the share that could not be copied (too big, too many, unreadable). */
+    public int sharedSkipped;
+    /** "" (quick capture), "ramble", "plan" (morning plan), "debrief" (evening) or "share". */
     public String mode = "";
     public long durationMs;
     public long speechMs;
@@ -70,6 +79,9 @@ public final class CaptureMeta {
         p.setProperty("audioFile", nz(audioFile));
         p.setProperty("audioParts", String.join(",", audioParts));
         p.setProperty("mode", nz(mode));
+        p.setProperty("sharedFiles", String.join(",", sharedFiles));
+        p.setProperty("sharedTextChars", Integer.toString(sharedTextChars));
+        p.setProperty("sharedSkipped", Integer.toString(sharedSkipped));
         p.setProperty("durationMs", Long.toString(durationMs));
         p.setProperty("speechMs", Long.toString(speechMs));
         p.setProperty("stopReason", nz(stopReason));
@@ -110,6 +122,12 @@ public final class CaptureMeta {
             m.audioParts.addAll(Arrays.asList(parts.split(",")));
         }
         m.mode = p.getProperty("mode", "");
+        String shared = p.getProperty("sharedFiles", "");
+        if (!shared.isEmpty()) {
+            m.sharedFiles.addAll(Arrays.asList(shared.split(",")));
+        }
+        m.sharedTextChars = (int) parseLong(p.getProperty("sharedTextChars"));
+        m.sharedSkipped = (int) parseLong(p.getProperty("sharedSkipped"));
         m.durationMs = parseLong(p.getProperty("durationMs"));
         m.speechMs = parseLong(p.getProperty("speechMs"));
         m.stopReason = p.getProperty("stopReason", "");
@@ -137,6 +155,11 @@ public final class CaptureMeta {
             one.add(audioFile);
         }
         return one;
+    }
+
+    /** True when something was shared into this capture (text or files). */
+    public boolean hasShared() {
+        return !sharedFiles.isEmpty() || sharedTextChars > 0;
     }
 
     /** Transcriber ids from {@code configured} that still have to run for this capture. */

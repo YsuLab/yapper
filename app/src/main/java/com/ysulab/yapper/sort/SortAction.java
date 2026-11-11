@@ -20,6 +20,8 @@ public final class SortAction {
     public static final String CHECK = "complete_task";
     /** Second brain: keep a note per person/project/tool/place he mentions, with facts and links. */
     public static final String ENTITY = "link_entity";
+    /** Ask your vault: a question to answer from his notes (no vault write; AnswerWorker answers it). */
+    public static final String ASK_VAULT = "ask_vault";
 
     /** One plan_day time block. */
     public static final class Block {
@@ -50,6 +52,11 @@ public final class SortAction {
     public final List<String> aliases = new ArrayList<>();
     /** link_entity: names of related entities or notes to link to. */
     public final List<String> related = new ArrayList<>();
+    /** ask_vault: search terms, every spelling ("GCP", "Google Cloud", "جي سي بي"). */
+    public final List<String> terms = new ArrayList<>();
+    /** ask_vault: optional YYYY-MM-DD range the question is about. */
+    public String since = "";
+    public String until = "";
 
     public SortAction(String tool) {
         this.tool = tool;
@@ -139,6 +146,12 @@ public final class SortAction {
                 names(a.optJSONArray("aliases"), s.aliases, s.title);
                 names(a.optJSONArray("related"), s.related, s.title);
                 break;
+            case ASK_VAULT:
+                s.question = oneLine(req(a, "question"));
+                names(a.optJSONArray("terms"), s.terms, "");
+                s.since = optDate(a.optString("since", ""));
+                s.until = optDate(a.optString("until", ""));
+                break;
             default:
                 throw new JSONException("unknown tool " + name);
         }
@@ -167,6 +180,11 @@ public final class SortAction {
             o.put("summary", summary);
             o.put("aliases", new JSONArray(aliases));
             o.put("related", new JSONArray(related));
+        }
+        if (ASK_VAULT.equals(tool)) {
+            o.put("terms", new JSONArray(terms));
+            o.put("since", since);
+            o.put("until", until);
         }
         return o;
     }
@@ -203,6 +221,9 @@ public final class SortAction {
         s.summary = o.optString("summary", "");
         strings(o.optJSONArray("aliases"), s.aliases);
         strings(o.optJSONArray("related"), s.related);
+        strings(o.optJSONArray("terms"), s.terms);
+        s.since = o.optString("since", "");
+        s.until = o.optString("until", "");
         return s;
     }
 
@@ -211,6 +232,19 @@ public final class SortAction {
             for (int i = 0; i < a.length(); i++) {
                 out.add(a.optString(i));
             }
+        }
+    }
+
+    /** A YYYY-MM-DD date, or "" when missing or unreadable (a bad range must not drop the question). */
+    static String optDate(String raw) {
+        String t = raw == null ? "" : raw.trim();
+        if (t.length() < 10) {
+            return "";
+        }
+        try {
+            return java.time.LocalDate.parse(t.substring(0, 10)).toString();
+        } catch (RuntimeException e) {
+            return "";
         }
     }
 

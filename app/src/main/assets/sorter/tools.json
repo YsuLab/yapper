@@ -260,5 +260,40 @@
         ]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "ask_vault",
+      "description": "He is asking Yapper a question about his own notes, past captures, plans or what he did (\"what did I say about GCP last week?\", \"وش قلت عن الامتحان؟\"). The app searches the vault and answers him in a notification. Nothing is written to his notes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question, cleaned up, in his language"
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Search terms: names, topics and every spelling (English, Arabic, short forms, note names from the index). Empty for 'what did I do last week?'"
+          },
+          "since": {
+            "type": "string",
+            "description": "YYYY-MM-DD, first day the question is about (optional)"
+          },
+          "until": {
+            "type": "string",
+            "description": "YYYY-MM-DD, last day the question is about (optional)"
+          }
+        },
+        "required": [
+          "question",
+          "terms"
+        ]
+      }
+    }
   }
 ]

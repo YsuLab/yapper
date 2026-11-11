@@ -63,7 +63,7 @@ public class SorterTest {
         SorterInput in = input();
         JSONObject req = SorterPrompt.request(cfg, asset("system.md"), asset("tools.json"), in);
         assertEquals("anthropic/claude-sonnet-5.5", req.getString("model"));
-        assertEquals(8, req.getJSONArray("tools").length());
+        assertEquals(9, req.getJSONArray("tools").length());
         JSONObject sys = req.getJSONArray("messages").getJSONObject(0).getJSONArray("content").getJSONObject(0);
         assertTrue(sys.has("cache_control"));
         JSONArray user = req.getJSONArray("messages").getJSONObject(1).getJSONArray("content");

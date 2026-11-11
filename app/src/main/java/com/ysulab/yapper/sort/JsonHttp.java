@@ -10,24 +10,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /** JSON POST over {@link HttpURLConnection}. No dependencies, unit-testable with a local server. */
-final class JsonHttp {
+public final class JsonHttp {
 
     static final int CONNECT_TIMEOUT_MS = 15_000;
     static final int READ_TIMEOUT_MS = 180_000;
 
     private JsonHttp() {}
 
-    static final class Response {
-        final int code;
-        final String body;
+    public static final class Response {
+        public final int code;
+        public final String body;
 
-        Response(int code, String body) {
+        public Response(int code, String body) {
             this.code = code;
             this.body = body;
         }
     }
 
-    static Response post(String url, Map<String, String> headers, String json) throws IOException {
+    public static Response post(String url, Map<String, String> headers, String json) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         try {
             byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
@@ -53,7 +53,7 @@ final class JsonHttp {
     }
 
     /** Short, single-line error detail. Never includes request headers. */
-    static String snippet(String body) {
+    public static String snippet(String body) {
         if (body == null) return "";
         String s = body.replaceAll("\\s+", " ").trim();
         return s.length() > 200 ? s.substring(0, 200) + "…" : s;

@@ -77,6 +77,18 @@ public final class EntityIndex {
         return base.equalsIgnoreCase(clean) ? "[[" + base + "]]" : "[[" + base + "|" + clean + "]]";
     }
 
+    /** Every name and alias that points to {@code path} (lower-cased keys), for search expansion. */
+    public java.util.List<String> aliasesOf(String path) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (Map.Entry<String, String> e : byKey.entrySet()) {
+            if (e.getValue().equals(path)) {
+                out.add(e.getKey());
+            }
+        }
+        java.util.Collections.sort(out);
+        return out;
+    }
+
     public int size() {
         return byKey.size();
     }

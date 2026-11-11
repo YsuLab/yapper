@@ -190,3 +190,21 @@ Newest first. Format: date — decision — why.
 - Sheet is 300dp (about a third of the S24 Ultra screen), full width, no box. Owner: the full-height black sheet killed the vibe.
 - The screen behind stays visible: empty cells are transparent, and a dithered dark haze rises with the smoke (none at the top, near solid under the words). The scrim is a light gradient, not 70 % black.
 - Motion: 1.8 s eased rise with uneven plumes, moonrise through the smoke, two smoke layers at different speeds for depth, voice speeds the drift. On release the smoke detaches from the bottom and drifts away over 1.2 s ("saved" shows for 1.3 s).
+
+### 2026-11-11 — Ask your vault by voice
+- **The sorter decides question vs capture.** New sorter tool `ask_vault(question, terms, since, until)`. Same side key,
+  no new mode or wake word: the sorter already reads every transcript, and one capture can mix a reminder and a
+  question. "Ask Ahmed about X" is not `ask_vault` (eval cases cover both).
+- **Local keyword search, no embeddings.** `ask/VaultSearch` splits notes into sections, dates each section from
+  `%%yap%%` markers, `### YYYY-MM-DD` headings and `Daily/` paths, folds Arabic letter variants, and widens a term to
+  every alias of its entity note (GCP ↔ Google Cloud ↔ جي سي بي). Runs on the phone over plain markdown; text cached
+  per note by modified time + size. Embeddings would need a second provider or an on-device model; keyword +
+  aliases is enough for one person's vault and adds no cost. Revisit when the home-lab GPU can serve embeddings.
+- **Two-step answer, at most 3 model calls.** Round 1 = question + local excerpts. The model may call
+  `search_vault` / `read_note` up to twice, then must answer (`tool_choice: none`, tools still declared because
+  Anthropic models reject a tool history without tools). Same OpenAI-compatible provider and model as the sorter.
+- **Answer = notification + capture note.** Notification: question as title, answer as text, tap opens the capture
+  note, "Source" opens the first cited note. The answer is appended to the capture note only (never to his notes),
+  tagged `%%yap:<id>/<n>%%`, so a retry never appends twice. `_yapper/` is not searched, so answers do not feed back.
+- **Question-only capture → no "Sorted ✓".** A quiet "Looking it up…" that the answer replaces. Answers have their
+  own channel with sound, since he is waiting.

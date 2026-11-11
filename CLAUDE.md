@@ -19,6 +19,9 @@ Voice-first capture app for one owner (Yasir). Side key → talk → everything 
   `SortAction` + `SafePath` (validate every tool call), `Executor` (append/create with `%%yap:<id>/<n>%%`, Undo),
   `ActionLog`, `Summary`. Prompt, tools and starter rules live in `app/src/main/assets/sorter/` (shared with the eval).
 - `work/SortWorker` (transcript → plan.json → vault → result notification), `UndoWorker` + `UndoReceiver`.
+- `ask/` — ask your vault, pure Java: `VaultSearch` (keyword + alias + date search over notes), `Asker` (≤ 3 model
+  calls with `search_vault`/`read_note`), `AnswerBlock`. Prompt in `assets/ask/system.md`. `work/AnswerWorker` runs it
+  for each `ask_vault` action and posts the answer notification.
 - `transcribe/` — `Transcriber` interface, OpenAI-compatible + ElevenLabs clients, `TranscriberConfig`.
 - `settings/` — `Settings`, `SecretStore` (Android Keystore).
 - `tools/transcribe-bench/score.py` — CER/WER per transcriber from Inbox notes (`python3 -m unittest` in CI).

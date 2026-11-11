@@ -2,4 +2,6 @@
 <resources>
     <!-- About a third of a tall phone screen (S24 Ultra is ~915dp tall). -->
     <dimen name="capture_sheet_height">300dp</dimen>
+    <!-- 1.7x the sheet: the shade starts well above it. -->
+    <dimen name="capture_backdrop_height">510dp</dimen>
 </resources>

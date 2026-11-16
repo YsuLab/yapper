@@ -81,12 +81,12 @@ If you see a yellow warning "secret not set", step 5 is incomplete.
 **From a PR:** open the PR → *Checks* → *Android CI* → *Summary* → **Artifacts** → `yapper-apk-<n>`.
 It downloads as a zip; open it in **My Files**, extract, tap the `.apk`.
 
-**From main:** the repo's **Releases** → `latest` → tap the `.apk`. Same link every time.
+**From main:** https://github.com/YsuLab/yapper/releases/latest/download/yapper.apk (same link every time).
 
 First install only: Android asks to allow your browser / My Files to *Install unknown apps*. Allow it.
 Google Play Protect may warn about an unknown developer: tap *More details → Install anyway*.
 
-The repo is private, so you must be signed in to GitHub in the phone browser (or use the GitHub app).
+The repo is public, so the download needs no GitHub sign-in.
 
 ## C. Phone setup for capture (M1, ~5 min)
 

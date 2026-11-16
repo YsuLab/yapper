@@ -2,6 +2,13 @@
 
 Newest first. Format: date — decision — why.
 
+
+## 2026-11-16 — Public release for the workshop
+- **The full feature stack (#4–#7, #13) goes to main in one PR.** Attendees fork main, so main must hold the real app. Owner approved.
+- **One rolling GitHub Release, fixed asset name `yapper.apk`.** Link `releases/latest/download/yapper.apk` never changes. It is a normal (not pre-) release, because `/releases/latest` skips pre-releases. `workflow_dispatch` with *publish* lets a fork publish its own link.
+- **Forks build without secrets.** CI falls back to a debug APK; the README shows how to add their own key.
+- **Removed stray `adhan-0.1.1.tar.gz`** from the repo root. Nothing referenced it.
+
 ## 2026-11-11 — Vault sync through the VPS
 - **Syncthing (Docker, `syncthing/syncthing:2`) on the VPS as the always-on hub**, Syncthing-Fork on phone and
   tablet, Syncthing on the PC. Confirms the M1 recommendation. Not self-hosted LiveSync/CouchDB: it only syncs

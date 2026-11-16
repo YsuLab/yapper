@@ -1,11 +1,23 @@
 # Owner setup guide
 
-Things only you can do. Claude never sees the keystore or its password.
+Things only you can do. Secrets live in GitHub secrets and the private project files, never in this repo.
 
-## A. Signing key (once, ~10 min)
+## A. Signing key (once, ~3 min)
 
 Every APK must be signed with the **same** key, or Android refuses to install it over the previous one.
-You create that key once, keep it safe, and give it to GitHub as secrets.
+
+### Quick path (key already made for you)
+Claude generated the keystore on 2026-11-11 and put it in the **private** project files folder
+`release/signing/` (never in this repo). The README there lists the four exact values.
+
+1. Back up `yapper-release.jks` and the README (password manager or encrypted drive). Lose it and the next
+   APK can't update the installed app.
+2. Repo → **Settings → Secrets and variables → Actions → New repository secret**, four times:
+   `YAPPER_KEYSTORE_BASE64`, `YAPPER_KEYSTORE_PASSWORD`, `YAPPER_KEY_ALIAS`, `YAPPER_KEY_PASSWORD`.
+3. Check: the next CI run's summary shows "Signed with release key" with a SHA-256 starting `2F:AE:A8:2F`.
+4. Uninstall the old (debug-signed) Yapper **once**, install the new APK. From then on, every APK updates in place.
+
+### Make your own key instead (optional)
 
 ### 1. Get `keytool`
 It ships with any JDK. Pick one:
@@ -69,12 +81,12 @@ If you see a yellow warning "secret not set", step 5 is incomplete.
 **From a PR:** open the PR → *Checks* → *Android CI* → *Summary* → **Artifacts** → `yapper-apk-<n>`.
 It downloads as a zip; open it in **My Files**, extract, tap the `.apk`.
 
-**From main:** the repo's **Releases** → `latest` → tap the `.apk`. Same link every time.
+**From main:** https://github.com/YsuLab/yapper/releases/latest/download/yapper.apk (same link every time).
 
 First install only: Android asks to allow your browser / My Files to *Install unknown apps*. Allow it.
 Google Play Protect may warn about an unknown developer: tap *More details → Install anyway*.
 
-The repo is private, so you must be signed in to GitHub in the phone browser (or use the GitHub app).
+The repo is public, so the download needs no GitHub sign-in.
 
 ## C. Phone setup for capture (M1, ~5 min)
 
@@ -99,24 +111,34 @@ The repo is private, so you must be signed in to GitHub in the phone browser (or
 
 All four status lines at the top should show ✅ (transcribers can stay empty: notes then hold audio only).
 
-## D. Vault sync (recommended, your call)
+## D. Vault sync (recommended)
 
-**Syncthing with the VPS as the hub.** The VPS is always on, so the phone and PC never need to be online
-at the same time, and the data stays on your own server.
+**Syncthing with the VPS as the hub**: phone ↔ VPS ↔ tablet/PC. Full steps, server config and how Yapper
+stays safe with sync on: [`docs/vault-sync.md`](vault-sync.md).
 
-1. VPS: install Syncthing (`apt install syncthing`, run as a user service), open the web UI over an SSH
-   tunnel or Tailscale only.
-2. Phone: install **Syncthing-Fork** (F-Droid / GitHub `researchxxl/syncthing-android`; the old official
-   app is discontinued). Share the vault folder with the VPS. Set the folder to *Send & Receive*.
-3. PC/laptop/tablet: install Syncthing, accept the same folder from the VPS, open it in Obsidian.
-4. Turn on *File versioning → Staggered* on the VPS side as a safety net.
+## E. Reminders: Microsoft To Do → Samsung Reminder (M3, ~15 min, once)
 
-Obsidian Sync (paid) also works with Yapper. Plugin-based sync (Remotely Save, LiveSync) only sees
-Yapper's files when Obsidian is open, so Syncthing is the better fit.
+Microsoft requires every app registration to live in a directory (tenant). A personal account gets one by
+signing up for Azure first.
 
-## E. Later milestones
-- **Claude API key** (M2): claude.ai → Settings → Billing → API credits → Link organization. In Console, create
-  workspace `yapper` with a spend limit, then an API key in it. You'll paste it into the app, never the repo.
-- **Microsoft Entra app + To Do sync** (M3): turn on Microsoft To Do sync in Samsung Reminder. Claude will
-  give exact Entra steps then.
-- **Exact alarms** (M3): allow when the app asks.
+1. Open **portal.azure.com** with the Microsoft account Samsung Reminder will sync with. If it says you have no
+   directory or subscription, create a free account (**Azure for Students** with your KAU email needs no card;
+   the normal free account asks for a card for verification only). Nothing here costs money.
+2. **Microsoft Entra ID → App registrations → New registration**
+   - Name `Yapper`
+   - Supported account types: **Personal Microsoft accounts only**
+   - Redirect URI: **Public client/native (mobile & desktop)** → `yapper://auth`
+3. **API permissions → Add a permission → Microsoft Graph → Delegated** → `Tasks.ReadWrite` and `offline_access`.
+4. **Authentication** → *Allow public client flows* → **Yes** → Save.
+5. Copy the **Application (client) ID** (a GUID; not a secret).
+6. Phone: **Samsung Reminder → ☰ → Settings → sync with Microsoft To Do** → sign in with the same account.
+7. Yapper → *Reminders* → paste the client ID → **Sign in to Microsoft** → approve → pick the list Samsung
+   Reminder syncs.
+8. Tap **Test sync**. Note how long until the task appears in Samsung Reminder, and whether it rings at the time.
+   If it is late, raise the *Alarm window* so more reminders ring as phone alarms.
+
+Until you sign in, every reminder rings as a phone alarm, so nothing is missed.
+
+## F. Ramble, plan and debrief (M4–M5)
+- Quick Settings: edit the tiles and add **Ramble**. Long-press the Yapper icon for *Ramble / Plan my day / Debrief*.
+- Morning and evening nudges default to 08:00 and 21:30; change or clear them in Yapper → *Daily nudges*.

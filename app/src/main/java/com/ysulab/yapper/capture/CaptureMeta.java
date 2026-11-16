@@ -35,6 +35,22 @@ public final class CaptureMeta {
     public long createdAtMs;
     public String zoneId = "Asia/Riyadh";
     public String audioFile = "";
+    /**
+     * M4 ramble: audio split into parts (audio-01.ogg, audio-02.ogg …), in order. Empty for a quick
+     * capture, which has only {@link #audioFile}. Use {@link #parts()}.
+     */
+    public final List<String> audioParts = new ArrayList<>();
+    /**
+     * Shared from another app: bundle file names ({@code shared-01.jpg} …), in order. See
+     * {@link SharedItems}.
+     */
+    public final List<String> sharedFiles = new ArrayList<>();
+    /** Characters of shared text in {@code shared.txt}; 0 when the share had none. */
+    public int sharedTextChars;
+    /** Files in the share that could not be copied (too big, too many, unreadable). */
+    public int sharedSkipped;
+    /** "" (quick capture), "ramble", "plan" (morning plan), "debrief" (evening), "share" or "review" (weekly). */
+    public String mode = "";
     public long durationMs;
     public long speechMs;
     public String stopReason = "";
@@ -46,6 +62,13 @@ public final class CaptureMeta {
     public String inboxPath = "";
     /** Transcriber ids that already appended a transcript (or a final failure) to the note. */
     public final Set<String> transcribedBy = new LinkedHashSet<>();
+    /**
+     * Sorter (M2) outcome: "" (not yet), "planned" (plan saved, writing), "done", "shadow"
+     * (proposal only), "failed", "undone", or "skipped" (nothing to sort, e.g. an M1 capture).
+     */
+    public String sorted = "";
+    /** One-line result for notifications, e.g. "1 note → Tabby/Learning.md · 2 reminders". */
+    public String sortSummary = "";
 
     public String serialize() {
         Properties p = new Properties();
@@ -54,6 +77,11 @@ public final class CaptureMeta {
         p.setProperty("createdAtMs", Long.toString(createdAtMs));
         p.setProperty("zoneId", nz(zoneId));
         p.setProperty("audioFile", nz(audioFile));
+        p.setProperty("audioParts", String.join(",", audioParts));
+        p.setProperty("mode", nz(mode));
+        p.setProperty("sharedFiles", String.join(",", sharedFiles));
+        p.setProperty("sharedTextChars", Integer.toString(sharedTextChars));
+        p.setProperty("sharedSkipped", Integer.toString(sharedSkipped));
         p.setProperty("durationMs", Long.toString(durationMs));
         p.setProperty("speechMs", Long.toString(speechMs));
         p.setProperty("stopReason", nz(stopReason));
@@ -63,6 +91,8 @@ public final class CaptureMeta {
         p.setProperty("webUri", nz(webUri));
         p.setProperty("inboxPath", nz(inboxPath));
         p.setProperty("transcribedBy", String.join(",", transcribedBy));
+        p.setProperty("sorted", nz(sorted));
+        p.setProperty("sortSummary", nz(sortSummary));
         StringWriter w = new StringWriter();
         try {
             p.store(w, "yapper capture");
@@ -87,6 +117,17 @@ public final class CaptureMeta {
         m.createdAtMs = parseLong(p.getProperty("createdAtMs"));
         m.zoneId = p.getProperty("zoneId", "Asia/Riyadh");
         m.audioFile = p.getProperty("audioFile", "");
+        String parts = p.getProperty("audioParts", "");
+        if (!parts.isEmpty()) {
+            m.audioParts.addAll(Arrays.asList(parts.split(",")));
+        }
+        m.mode = p.getProperty("mode", "");
+        String shared = p.getProperty("sharedFiles", "");
+        if (!shared.isEmpty()) {
+            m.sharedFiles.addAll(Arrays.asList(shared.split(",")));
+        }
+        m.sharedTextChars = (int) parseLong(p.getProperty("sharedTextChars"));
+        m.sharedSkipped = (int) parseLong(p.getProperty("sharedSkipped"));
         m.durationMs = parseLong(p.getProperty("durationMs"));
         m.speechMs = parseLong(p.getProperty("speechMs"));
         m.stopReason = p.getProperty("stopReason", "");
@@ -95,11 +136,30 @@ public final class CaptureMeta {
         m.sourceApp = p.getProperty("sourceApp", "");
         m.webUri = p.getProperty("webUri", "");
         m.inboxPath = p.getProperty("inboxPath", "");
+        m.sorted = p.getProperty("sorted", "");
+        m.sortSummary = p.getProperty("sortSummary", "");
         String by = p.getProperty("transcribedBy", "");
         if (!by.isEmpty()) {
             m.transcribedBy.addAll(Arrays.asList(by.split(",")));
         }
         return m;
+    }
+
+    /** Audio files of this capture, in order: the ramble parts, or the single quick-capture file. */
+    public List<String> parts() {
+        if (!audioParts.isEmpty()) {
+            return new ArrayList<>(audioParts);
+        }
+        List<String> one = new ArrayList<>();
+        if (audioFile != null && !audioFile.isEmpty()) {
+            one.add(audioFile);
+        }
+        return one;
+    }
+
+    /** True when something was shared into this capture (text or files). */
+    public boolean hasShared() {
+        return !sharedFiles.isEmpty() || sharedTextChars > 0;
     }
 
     /** Transcriber ids from {@code configured} that still have to run for this capture. */

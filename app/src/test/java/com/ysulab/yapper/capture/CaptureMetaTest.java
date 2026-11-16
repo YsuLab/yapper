@@ -26,6 +26,8 @@ public class CaptureMetaTest {
         m.inboxPath = "Inbox/Capture 2026-11-09 142305.md";
         m.transcribedBy.add("openai");
         m.transcribedBy.add("groq");
+        m.sorted = "done";
+        m.sortSummary = "1 note → Uni/Algorithms.md";
 
         CaptureMeta r = CaptureMeta.parse(m.serialize());
         assertEquals(m.id, r.id);
@@ -41,6 +43,8 @@ public class CaptureMetaTest {
         assertEquals(m.webUri, r.webUri);
         assertEquals(m.inboxPath, r.inboxPath);
         assertEquals(m.transcribedBy, r.transcribedBy);
+        assertEquals(m.sorted, r.sorted);
+        assertEquals(m.sortSummary, r.sortSummary);
     }
 
     @Test

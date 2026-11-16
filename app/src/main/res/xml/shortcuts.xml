@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_mic"
+        android:shortcutId="ramble"
+        android:shortcutShortLabel="@string/shortcut_ramble">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="yapper://ramble/ramble"
+            android:targetClass="com.ysulab.yapper.assist.RambleActivity"
+            android:targetPackage="com.ysulab.yapper" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_mic"
+        android:shortcutId="plan"
+        android:shortcutShortLabel="@string/shortcut_plan">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="yapper://ramble/plan"
+            android:targetClass="com.ysulab.yapper.assist.RambleActivity"
+            android:targetPackage="com.ysulab.yapper" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_mic"
+        android:shortcutId="debrief"
+        android:shortcutShortLabel="@string/shortcut_debrief">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="yapper://ramble/debrief"
+            android:targetClass="com.ysulab.yapper.assist.RambleActivity"
+            android:targetPackage="com.ysulab.yapper" />
+    </shortcut>
+</shortcuts>

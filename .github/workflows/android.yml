@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Also publish this build as the public "latest" release
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,6 +41,9 @@ jobs:
 
       - name: Benchmark scorer tests
         run: python3 -m unittest discover -s tools/transcribe-bench -v
+
+      - name: Sorter eval scorer tests
+        run: python3 -m unittest discover -s tools/sorter-eval -v
 
       - name: Decode signing key
         if: env.HAS_KEYSTORE == 'true'
@@ -79,10 +87,11 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  # On main, keep one rolling pre-release with the newest APK, so the phone has one fixed download page.
+  # On main, keep one rolling release with the newest APK under a fixed file name, so this link never changes:
+  # https://github.com/<owner>/<repo>/releases/latest/download/yapper.apk
   publish-latest:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -91,12 +100,16 @@ jobs:
         with:
           name: yapper-apk-${{ github.run_number }}
           path: out
-      - name: Update "latest" pre-release
+      - name: Update "latest" release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          APK=$(ls out/*.apk | head -1)
+          cp "$APK" out/yapper.apk
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest out/*.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Latest main build #${GITHUB_RUN_NUMBER}" \
-            --notes "Built from ${GITHUB_SHA} by run ${GITHUB_RUN_NUMBER}."
+          gh release create latest out/yapper.apk "$APK" --latest --target "$GITHUB_SHA" \
+            --title "Yapper build #${GITHUB_RUN_NUMBER}" \
+            --notes "Android 10+ APK. Download \`yapper.apk\` and open it on the phone. Built from ${GITHUB_SHA} by run ${GITHUB_RUN_NUMBER}."
+          echo "### Public download" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/yapper.apk" >> "$GITHUB_STEP_SUMMARY"

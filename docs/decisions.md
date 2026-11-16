@@ -2,6 +2,192 @@
 
 Newest first. Format: date — decision — why.
 
+
+## 2026-11-16 — Public release for the workshop
+- **The full feature stack (#4–#7, #13) goes to main in one PR.** Attendees fork main, so main must hold the real app. Owner approved.
+- **One rolling GitHub Release, fixed asset name `yapper.apk`.** Link `releases/latest/download/yapper.apk` never changes. It is a normal (not pre-) release, because `/releases/latest` skips pre-releases. `workflow_dispatch` with *publish* lets a fork publish its own link.
+- **Forks build without secrets.** CI falls back to a debug APK; the README shows how to add their own key.
+- **Removed stray `adhan-0.1.1.tar.gz`** from the repo root. Nothing referenced it.
+
+## 2026-11-11 — Vault sync through the VPS
+- **Syncthing (Docker, `syncthing/syncthing:2`) on the VPS as the always-on hub**, Syncthing-Fork on phone and
+  tablet, Syncthing on the PC. Confirms the M1 recommendation. Not self-hosted LiveSync/CouchDB: it only syncs
+  while Obsidian runs, so Yapper's background writes would wait; it also adds a database to run. Owner prefers
+  the VPS for data.
+- **Web UI bound to 127.0.0.1, reached by SSH tunnel.** Only 22000 tcp/udp is open. Smallest attack surface.
+- **Staggered versioning (365 days) on the VPS only.** One place holds every overwritten version.
+- **Ignore `.obsidian/workspace*.json` and `.trash`.** Per-device layout files conflict on every switch.
+- **Every vault append is read back and retried (max 3) if the block is missing** (`SyncSafety.appendVerified`).
+  Syncthing replaces files by temp-file + rename, so an append racing a sync can land in the orphaned old file.
+  Blocks are unique (`%%yap%%` marker / timed heading), so "present" means "written" and a retry can't double.
+  After 3 misses the worker fails and WorkManager retries; the capture bundle stays.
+- **Syncthing conflict copies are skipped by the index and listed in `_yapper/sync-conflicts.md`** (our own file,
+  rewritten only when the list changes). The sorter never files into a copy, and a Yapper block that ended up in
+  a copy is one tap away. Yapper never merges or deletes copies itself (would mean rewriting owner text).
+
+## 2026-11-11 — Prayer-time reminders
+- **Computed on the phone, Umm al-Qura method, Jeddah.** Fajr 18.5°, Asr standard (shadow 1), Isha = Maghrib +
+  90 min (120 in Ramadan, Ramadan read from `java.time.chrono.HijrahDate`, which is the Umm al-Qura calendar).
+  No network and no library: the USNO low-precision sun formulas fit in one pure-Java class (`prayer/PrayerTimes`)
+  and match the published Jeddah table to ±1 minute. Coordinates fixed to Jeddah for now; a location setting can
+  come later if he travels.
+- **The sorter resolves the time, not the app.** The system prompt gets an 8-day table (today + a week, Friday
+  Dhuhr marked Jumuah) and resolution rules. The model already handles "tomorrow", "next Friday" and Arabic
+  phrasing, so it picks the day and the prayer and writes a normal `remind_at`. No new tool, nothing else changes
+  in reminders, To Do sync or alarms. Replaces the old "after Asr → ask_owner" rule.
+- **Offsets: "after X" = X + 30 min, "before X" = X − 15 min, "after Jumuah" = Dhuhr + 45 min, "between Maghrib
+  and Isha" = Maghrib + 30.** "After Asr" means after he has prayed: adhan, about 20 minutes to iqama, then the
+  prayer. A rule in `_yapper/rules.md` overrides these (the rules note wins over the prompt).
+- **Eval uses a fixed copy of the app's table** (`evals/prayer-times.md`) instead of a Python port, so there is
+  one implementation of the astronomy.
+
+## 2026-11-11 — Share to Yapper
+- **Android share target (`ShareActivity`) for text, images, PDFs and any file, one or many.** WhatsApp sends
+  text as `ACTION_SEND` text/plain and mixed selections as `ACTION_SEND_MULTIPLE` */*. Owner gets timetables
+  and tasks through WhatsApp and wanted them in without the side key.
+- **Same sheet as the side key, mic already listening.** Zero extra taps for a voice note ("this is the new
+  timetable, remind me before each quiz"). Silence, no speech (6 s), a tap or Back ends it. Back means "done",
+  not "cancel": the share is saved the moment it arrives.
+- **Copy first, then everything else.** Files are streamed into the capture bundle (`shared-01.jpg` …,
+  `shared.txt`) before the job is queued, and the activity stays open until the copy ends, because the read
+  grant on a shared `content://` URI ends with the receiving activity. Limits: 10 files, 25 MB each; the rest
+  is counted and noted in the Inbox note, not silently dropped. Only `content://` URIs are read.
+- **No speech → audio is not transcribed.** The file stays in the bundle, but a transcriber would invent text
+  from silence. A share without a voice note skips transcription and goes straight to the sorter.
+- **Sorter gets the shared content, not the screen.** Shared text, vault file names (so the note it writes can
+  embed the original with `![[name]]`), up to 4 images at ≤1600 px (timetables need small print; screenshots
+  stay at 720 px), and one PDF ≤5 MB as an OpenRouter `file` part. PDFs only go to OpenRouter, which reads them
+  for any model; other OpenAI-compatible servers would reject the part. Shared images are sent regardless of
+  the "screenshots" setting: the owner chose to share them.
+- **Recurring weekly timetables are typed out as a table, not one reminder per slot**, unless the voice note
+  asks for reminders. One-off dated items (exam, deadline, moved lecture) do become reminders.
+
+## 2026-11-11 — Weekly review (Saturday)
+- **Week = Sunday to Saturday** (Saudi week). Note path `Weekly/YYYY-Www.md` with Sunday-start week numbers
+  (week 1 holds 1 January), title "Week 46 · 8–14 Nov 2026". Owner reflects on Saturdays.
+- **Saturday nudge, default 10:00, configurable/off** in Settings (Daily nudges section). It first builds the
+  week's note, then notifies "Your week W46 is ready · 12 done · 5 open · …" with View (Obsidian) and Reflect.
+  Also a "Weekly review" button in the app for any day.
+- **The week summary is built by the app, not an LLM** (`review/WeekDigest`): offline, free, no invented facts.
+  Sources: daily notes (done/open tasks, deduped across roll-overs; Debrief lines), lines under this week's
+  dated headings in any note (Yapper's appends and entity logs), notes Yapper created this week (marker ids
+  carry the date), capture count, open ❓ questions in `Inbox.md`, and last week's "Focus for next week".
+  Only notes modified since Sunday are read.
+- **Reflection = ramble in mode `review` → new sorter tool `weekly_review`** (summary, went_well,
+  could_be_better, focus_next_week, notes). Written under `## Reflection` in the week's note; focus items are
+  `- [ ]` tasks and show up again at the top of next week's note ("Last week's focus"), closing the loop.
+  The sorter sees the week summary so it can resolve "that GCP thing" and link notes.
+- **Late review:** a review made on Sunday or Monday is about the week that just ended; Tuesday to Saturday it
+  is the current week (`WeekRange.forReview`).
+- **Refresh without rewriting owner text:** the app remembers (app storage) what it last wrote to the week's
+  note. If the note is still exactly that, a later build replaces it with a fresh one (so a Saturday-night
+  review sees the whole week). Once the owner or a reflection changed it, it is never rewritten.
+
+## 2026-11-11 — Second brain (entity notes + links)
+- **New sorter tool `link_entity`** (name, kind, fact, summary, aliases, related, optional path). One call per
+  person, project, company, course, tool or place in a capture. Owner asked for Obsidian-style "second brain"
+  notes that build themselves, with note-to-note links (e.g. GCP ↔ Tabby).
+- **The app, not the model, decides "existing or new".** `EntityIndex` reads names, titles and aliases from
+  `_yapper/index.md` (case-insensitive, Arabic diacritics ignored), so "gcp" lands in `Topics/Google Cloud.md` if
+  that note has the alias. Avoids duplicate notes, which the model alone produces easily.
+- **New entity note** = frontmatter (`aliases`, `type`, `tags: entity`), `# Name`, one-line summary, `## Related`
+  links, `## Log` with a dated fact. **Existing note** = one appended dated line: fact · related links · 🎙 link
+  back to the capture. Append/create only; frontmatter of existing notes is never touched.
+- **Default folders when rules/index give no home:** People/, Projects/, Uni/ (courses), Topics/ (everything
+  else). The owner's `rules.md` wins; the starter rules now document this.
+- **Dense linking in every block is a prompt rule** (wrap entity names in `[[ ]]`), not a regex auto-linker:
+  a regex would mislink partial words, code and Arabic.
+- **Undo** reuses the action log: a created entity note is deleted only if unchanged; if a later capture added to
+  it, only our exact text is removed.
+
+## 2026-11-09 — M3–M5 (one release)
+- **M3, M4 and M5 ship as one PR and one APK.** Owner asked for a single build to test instead of one per
+  milestone (reinstalls are tiring). Overrides "one milestone = one PR" for these three.
+- **No MSAL.** OAuth 2.0 authorization code + PKCE against `login.microsoftonline.com/consumers`, redirect
+  `yapper://auth`, scopes `Tasks.ReadWrite offline_access`. Three HTTP calls; avoids a large dependency and the
+  MSAL redirect URI that embeds the signing-key hash (which would change while the owner still has debug builds).
+  Refresh token in the Keystore-backed `SecretStore`.
+- **Graph times in UTC.** `reminderDateTime`/`dueDateTime` sent with `timeZone: "UTC"`; To Do and Samsung Reminder
+  show them in the phone's zone. Avoids Windows-vs-IANA zone name issues.
+- **Reminder routing (exact-minute safety net).** Due within the alarm window (default 60 min, setting) → local
+  `AlarmManager.setAlarmClock` alarm rings, and the To Do task is created with `isReminderOn: false` so Samsung
+  Reminder does not ring a second time. Later → To Do reminder only. Push delayed until inside the window
+  (offline) → switches to the local alarm. Not signed in / token revoked / list gone → every waiting reminder rings
+  locally. Past times → To Do task without reminder. The window is a setting so the owner can widen it if the
+  sync test shows Samsung Reminder is late.
+- **`USE_EXACT_ALARM`** (granted at install, Android 13+) instead of asking for "Alarms & reminders". Sideloaded
+  app, so the Play policy limit on that permission does not apply. Alarms are restored on boot and app update.
+- **Ramble = microphone foreground service, ~5-min Ogg/Opus parts cut at a pause** (hard cut at 7 min). Each part is
+  added to the bundle when finalized, so a crash loses at most the current part, and each part stays far below
+  transcription upload limits. Transcribed per part with resume; a part that fails for good leaves a visible gap
+  marker instead of failing the whole ramble. Partial wake lock for the recording only (max 65 min).
+- **Ramble starts from an activity** (app button, Quick Settings tile, launcher shortcuts, nudge notification):
+  Android 14+ only lets a visible app start microphone recording.
+- **Day plan = `plan_day` tool:** `## Plan` with `- [ ] HH:mm–HH:mm title` lines in the daily note, and an alarm
+  (same routing as reminders, no extra `⏰` line) at each block start unless `alarm: false`.
+- **Debrief ticks checkboxes.** `complete_task` changes only `- [ ]` → `- [x]` on the first matching open task in
+  that day's daily note; logged with the exact before/after line, so Undo reverts it. This is the one exception
+  to "append only", because the milestone asks for done items to be checked. No match → `- [x]` line under
+  `## Debrief`, so nothing is lost. Unfinished items roll over to tomorrow via `add_to_daily` ("Rolled over").
+- **Daily nudges** at 08:00 and 21:30 (settings, empty = off), inexact alarms. One tap starts a plan or debrief
+  ramble. The owner forgets lists that need him to look, so the app comes to him.
+
+## 2026-11-09 — M2 (Sorter)
+- **Shadow mode is a toggle, default off.** The brief planned ~3 days of proposals first. The owner wants real
+  filing now, and every write is append-only, tagged and undoable, so the safety comes from Undo instead. The
+  toggle stays for testing a new model or new rules: proposals go into the capture note, nothing else changes.
+- **One model call per capture, tool calls only.** The tools have no results the model needs, so there is no
+  agent loop: faster, cheaper, and easier to replay. A text-only answer becomes a question.
+- **`tool_choice: "auto"`, not "required".** Phone test: Claude via OpenRouter returned HTTP 400 ("tool_choice
+  type any … not supported" with thinking on). The prompt still demands tool calls only; a text answer becomes an
+  ask_owner question, so nothing is lost.
+- **Every tool call is validated before it touches the vault.** `SafePath` rejects `..`, hidden folders and
+  `_yapper/`, fixes wikilink-style paths and adds `.md`; reminders need an ISO time with offset. Invalid calls are
+  dropped and listed in the capture note.
+- **Plan first, then write; log every write.** `plan.json` is saved before any write, so a retry re-uses the same
+  plan instead of asking the model again. Each block has `%%yap:<capture id>/<n>%%`, and the executor re-reads the
+  file before writing, so a retry skips blocks already there. `actions.json` keeps the exact text for Undo.
+- **Append at the end of the note, never insert in the middle.** Inserting under an existing heading means
+  rewriting the file, which can lose a sync change. Blocks go at the end under `### YYYY-MM-DD · topic`; the
+  heading is skipped when it is already the note's last heading, so one day's captures group together.
+- **Undo removes exactly the logged text.** A note we created is deleted only if it is unchanged. If the owner
+  edited a block, Undo keeps it and says so.
+- **Reminders in M2 = lines in that day's daily note** (`## Reminders`, `- [ ] ⏰ 17:00 …`). The action log keeps
+  title + time, so M3 can push them to Microsoft To Do without asking the model again.
+- **Questions (`ask_owner`) go to `Inbox.md`** as tasks with a link back to the capture, per the rules note.
+  Actionable notification replies come later.
+- **Sorted capture notes move to `_yapper/captures/`** (setting, default on): the owner wanted ideas filed, not
+  transcripts in his Inbox. The note keeps the audio, screenshot, transcripts and a "Sorted" list of links. Obsidian
+  resolves `![[file]]` by name, so embeds keep working. Undo moves it back to `Inbox/`.
+- **Index = one line per note** (path, title, aliases, up to 8 `##`/`###` headings), rebuilt before each sort.
+  Only changed files are re-read (cache keyed by size + modified time), first 16 KB each. Skips `.*`, `_yapper/`,
+  `Inbox/`.
+- **Screenshot only when screen text is under 80 characters**, downscaled to ~720 px wide, JPEG q75.
+- **Prompt, tools and starter rules are assets** (`app/src/main/assets/sorter/`). The eval runner reads the same
+  files, so `run_eval.py` measures exactly what the phone sends.
+- **Default model `anthropic/claude-sonnet-5.5` on OpenRouter** with `cache_control` on the system part (rules +
+  index) for Anthropic models only. Empty sorter key + OpenRouter URL reuses the OpenRouter transcriber key.
+- **Only captures transcribed by an M2 build are sorted** (the transcript is now saved in the bundle). Older test
+  captures stay in Inbox.
+
+## 2026-11-09 — Models: API vs self-hosted
+- **Any model, not only Claude.** Transcriber model IDs and base URLs are already settings (M1). The M2 sorter
+  is built on the OpenAI-compatible chat API (tools + image input), not the Anthropic Messages API. OpenRouter
+  speaks it for Claude, GPT, Gemini, Qwen, etc., and vLLM / llama.cpp / Ollama speak it locally. So switching
+  model or moving to the home lab is a settings change, not code. Claude (Sonnet) is the starting baseline
+  because it is strong at following written rules and tool calls; the M2 eval set decides what else is good enough.
+- **Self-host transcription first.** Open-weight Arabic ASR caught up in 2026. Candidates for the self-hosted slot:
+  `IFM/Jais-ASR` (6B, Apache 2.0, ~12 GB BF16, AWQ/FP8 builds; Saudi dialect code, `code_switch` keeps English in
+  Latin script; vLLM plugin exposes `/v1/audio/transcriptions`) and Cohere Transcribe Arabic (open weights, Apache 2.0,
+  based on the 2B Cohere Transcribe). Vendor-reported avg WER on the Open Universal Arabic ASR sets: Jais-ASR 22.85,
+  ElevenLabs Scribe v2 24.54, Cohere Transcribe Arabic 25.87, Whisper large-v3 36.86. On SADA (Saudi) Jais-ASR is
+  30.85. Vendor numbers: the M1 benchmark (`score.py`) on the owner's own clips decides.
+- **Self-host the sorter only if it passes the eval.** 24 GB fits one ~30B model at 4-bit with vision + tools,
+  e.g. Qwen3.6-35B-A3B (Q4_K_M ≈ 22 GB, Apache 2.0), Qwen3.8-27B, Gemma 4 26B-A4B / 31B. Context left is ~35–55K
+  tokens, and STT + LLM do not both fit on 24 GB; a second 8–12 GB card holds the STT model. Run the M2 eval set
+  against the local model; switch when it reaches the same ≥ 90 % bar. Until then: local STT + API sorter.
+- **Fallback order** (later): self-hosted first, API when the home lab is unreachable, so a capture is never stuck.
+
 ## 2026-11-09 — M1 (Capture)
 - **OpenRouter slot: one key covers transcription (and can cover the M2 sorter).** Owner uses OpenRouter
   for almost everything. OpenRouter has `POST /api/v1/audio/transcriptions` (multipart, JSON response,
@@ -80,3 +266,45 @@ Newest first. Format: date — decision — why.
   stay as Actions artifacts.
 - **`YapId` format `yyyyMMdd-HHmmss-xxxx` (UTC + 4 base-36 chars).** Time-sortable, short enough for
   `%%yap:<id>%%` markers, and collision-safe for one person's capture rate.
+
+### 2026-11-11 — Capture sheet v2: smaller, see-through, crafted smoke
+- Sheet is 300dp (about a third of the S24 Ultra screen), full width, no box. Owner: the full-height black sheet killed the vibe.
+- The screen behind stays visible: empty cells are transparent, and a dithered dark haze rises with the smoke (none at the top, near solid under the words). The scrim is a light gradient, not 70 % black.
+- Motion: 1.8 s eased rise with uneven plumes, moonrise through the smoke, two smoke layers at different speeds for depth, voice speeds the drift. On release the smoke detaches from the bottom and drifts away over 1.2 s ("saved" shows for 1.3 s).
+
+### 2026-11-11 — Ask your vault by voice
+- **The sorter decides question vs capture.** New sorter tool `ask_vault(question, terms, since, until)`. Same side key,
+  no new mode or wake word: the sorter already reads every transcript, and one capture can mix a reminder and a
+  question. "Ask Ahmed about X" is not `ask_vault` (eval cases cover both).
+- **Local keyword search, no embeddings.** `ask/VaultSearch` splits notes into sections, dates each section from
+  `%%yap%%` markers, `### YYYY-MM-DD` headings and `Daily/` paths, folds Arabic letter variants, and widens a term to
+  every alias of its entity note (GCP ↔ Google Cloud ↔ جي سي بي). Runs on the phone over plain markdown; text cached
+  per note by modified time + size. Embeddings would need a second provider or an on-device model; keyword +
+  aliases is enough for one person's vault and adds no cost. Revisit when the home-lab GPU can serve embeddings.
+- **Two-step answer, at most 3 model calls.** Round 1 = question + local excerpts. The model may call
+  `search_vault` / `read_note` up to twice, then must answer (`tool_choice: none`, tools still declared because
+  Anthropic models reject a tool history without tools). Same OpenAI-compatible provider and model as the sorter.
+- **Answer = notification + capture note.** Notification: question as title, answer as text, tap opens the capture
+  note, "Source" opens the first cited note. The answer is appended to the capture note only (never to his notes),
+  tagged `%%yap:<id>/<n>%%`, so a retry never appends twice. `_yapper/` is not searched, so answers do not feed back.
+- **Question-only capture → no "Sorted ✓".** A quiet "Looking it up…" that the answer replaces. Answers have their
+  own channel with sound, since he is waiting.
+
+### 2026-11-11 — Capture sheet v3: backdrop and fades (picked from a mock)
+- A 40 % dark shade behind the sheet only, as a tall gradient that starts above the sheet (no top edge). It fades in over 0.6 s and out with the smoke.
+- The words fade in 0.25 s after the press, cross-fade to "saved", then fade out with the dissolve. Nothing pops.
+- No hard lines: the text band dims the smoke over 0.3 of the height, the dark under the words builds up to the bottom edge, and rings fade before the top edge.
+
+### 2026-11-11 — Stable APK signing
+- **Claude generated the release keystore** (PKCS12, alias `yapper`, RSA 4096, valid 100 years) instead of the
+  owner running keytool. Owner asked for zero effort. The key lives only in the private project files
+  (`release/signing/`) and in GitHub secrets, never in this public repo, logs or PR text. Supersedes "the key never
+  touches Claude" from M0.
+- **Owner pastes the four secrets.** The cloud proxy blocks the Actions secrets API, so Claude cannot set them.
+  Workflow and Gradle signing code stay unchanged: every branch (main and all stacked PRs) already signs with
+  the secrets when present, so one paste covers every same-repo build.
+- **Release path verified before the secrets exist.** A temporary CI run built `assembleRelease` on the full
+  feature stack with a throwaway key, so the first real signed build is not also the first test of that path.
+- **One last uninstall.** The installed app is debug-signed; the first release-signed APK needs a clean install
+  (app data, saved API keys and the vault folder grant are lost once). After that, updates install in place.
+  Note: `versionCode` = run number, so installing an older run's APK over a newer one is refused as a downgrade.

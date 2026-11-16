@@ -15,19 +15,19 @@ import java.util.Locale;
  * the Android unit-test classpath). Records the last request, returns a canned response, and
  * understands chunked request bodies, which our client sends.
  */
-final class FakeServer implements AutoCloseable {
+public final class FakeServer implements AutoCloseable {
 
     private final ServerSocket socket;
     private final Thread thread;
-    volatile String path;
-    volatile String auth;
-    volatile String xiKey;
-    volatile String contentType;
-    volatile String body;
-    volatile int status = 200;
-    volatile String response = "";
+    public volatile String path;
+    public volatile String auth;
+    public volatile String xiKey;
+    public volatile String contentType;
+    public volatile String body;
+    public volatile int status = 200;
+    public volatile String response = "";
 
-    FakeServer() throws IOException {
+    public FakeServer() throws IOException {
         socket = new ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"));
         thread = new Thread(this::serve, "fake-http");
         thread.setDaemon(true);
@@ -115,7 +115,7 @@ final class FakeServer implements AutoCloseable {
         return b.toString("UTF-8");
     }
 
-    String url() {
+    public String url() {
         return "http://127.0.0.1:" + socket.getLocalPort() + "/v1";
     }
 

@@ -9,12 +9,16 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.service.voice.VoiceInteractionSession;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.TextView;
 import com.ysulab.yapper.R;
 import com.ysulab.yapper.YapId;
@@ -24,6 +28,8 @@ import com.ysulab.yapper.capture.ScreenText;
 import com.ysulab.yapper.capture.ScreenshotCheck;
 import com.ysulab.yapper.capture.SilenceDetector;
 import com.ysulab.yapper.settings.Settings;
+import com.ysulab.yapper.ui.DitherView;
+import com.ysulab.yapper.ui.SmokeScene;
 import com.ysulab.yapper.work.CaptureScheduler;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,6 +37,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -52,7 +59,8 @@ public class CaptureSession extends VoiceInteractionSession {
         return t;
     });
     private static final long POLL_MS = 100;
-    private static final long GOT_IT_MS = 450;
+    /** Time to show "saved" while the smoke settles. The bundle is already queued by then. */
+    private static final long GOT_IT_MS = 1300;
     private static final int MAX_SCREEN_CHARS = 20_000;
 
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -67,7 +75,12 @@ public class CaptureSession extends VoiceInteractionSession {
 
     private TextView title;
     private TextView hint;
-    private View meter;
+    private TextView timer;
+    private View dot;
+    private DitherView field;
+    private View backdrop;
+    private long startedAt;
+    private PowerManager.WakeLock screenLock;
 
     public CaptureSession(Context context) {
         super(context);
@@ -78,8 +91,19 @@ public class CaptureSession extends VoiceInteractionSession {
         View v = LayoutInflater.from(getContext()).inflate(R.layout.capture_overlay, null);
         title = v.findViewById(R.id.capture_title);
         hint = v.findViewById(R.id.capture_hint);
-        meter = v.findViewById(R.id.capture_meter);
-        v.setOnClickListener(x -> stop("tap"));
+        timer = v.findViewById(R.id.capture_timer);
+        dot = v.findViewById(R.id.capture_dot);
+        field = v.findViewById(R.id.capture_field);
+        backdrop = v.findViewById(R.id.capture_backdrop);
+        SmokeScene scene = field.scene();
+        // Smaller sheet over the screen you were on: the moon sits high, the words sit in the dark band below.
+        scene.transparent = true;
+        scene.moonY = 0.36f;
+        scene.moonR = 0.13f;
+        scene.quietTop = 0f;
+        scene.quietBottom = 0.26f;
+        // Only a tap on the sheet itself ends the capture; a stray touch on the dimmed top part does nothing.
+        v.findViewById(R.id.capture_sheet).setOnClickListener(x -> stop("tap"));
         return v;
     }
 
@@ -101,6 +125,19 @@ public class CaptureSession extends VoiceInteractionSession {
         store = CaptureScheduler.store(ctx);
         id = YapId.generate(Instant.now(), new SecureRandom());
         setText(R.string.capture_listening, R.string.capture_hint);
+        startedAt = SystemClock.elapsedRealtime();
+        keepScreenOn(true);
+        if (timer != null) {
+            timer.setText(clock(0));
+        }
+        if (dot != null) {
+            dot.setVisibility(View.VISIBLE);
+        }
+        fadeIn();
+        if (field != null) {
+            // Smoke starts to rise the moment the side key is pressed; recording does not wait for it.
+            field.press();
+        }
 
         try {
             store.create(id, System.currentTimeMillis(), Settings.ZONE);
@@ -113,7 +150,7 @@ public class CaptureSession extends VoiceInteractionSession {
 
         if (ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             // Keep the screen data anyway; the capture is still useful.
-            setText(R.string.capture_no_mic, R.string.capture_no_mic_hint);
+            setText(R.string.capture_no_mic, R.string.capture_no_mic_readout);
             main.postDelayed(() -> stop("no_mic"), 1500);
             return;
         }
@@ -125,7 +162,7 @@ public class CaptureSession extends VoiceInteractionSession {
             IO.execute(() -> update(captureId, m -> m.audioFile = name));
         } catch (Exception e) {
             audio = null;
-            setText(R.string.capture_no_mic, R.string.capture_mic_busy_hint);
+            setText(R.string.capture_no_mic, R.string.capture_mic_busy_readout);
             main.postDelayed(() -> stop("mic_error"), 1500);
             return;
         }
@@ -141,8 +178,12 @@ public class CaptureSession extends VoiceInteractionSession {
                 return;
             }
             int amp = audio.amplitude();
-            if (meter != null) {
-                meter.setScaleX(Math.max(0.04f, SilenceDetector.level(amp)));
+            if (field != null) {
+                // The moon is the meter: loud syllables send rings out from it.
+                field.setLevel(SilenceDetector.level(amp));
+            }
+            if (timer != null) {
+                timer.setText(clock(SystemClock.elapsedRealtime() - startedAt));
             }
             SilenceDetector.Decision d = detector.onSample(amp, SystemClock.elapsedRealtime());
             switch (d) {
@@ -244,12 +285,46 @@ public class CaptureSession extends VoiceInteractionSession {
         return out;
     }
 
+    /**
+     * Keeps the screen on while the owner talks, unlocked or on the lock screen. If the screen went off,
+     * Android would hide the session and end the capture early. Two layers: the window flag, and a screen
+     * wake lock (with a time limit) for the lock screen, whose own timeout is short.
+     */
+    @SuppressWarnings("deprecation")
+    private void keepScreenOn(boolean on) {
+        Window w = getWindow() != null ? getWindow().getWindow() : null;
+        if (w != null) {
+            if (on) {
+                w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                w.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        }
+        try {
+            if (on) {
+                if (screenLock == null) {
+                    PowerManager pm = getContext().getSystemService(PowerManager.class);
+                    screenLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                            | PowerManager.ON_AFTER_RELEASE, "yapper:capture");
+                    screenLock.setReferenceCounted(false);
+                }
+                long limit = (settings != null ? settings.maxCaptureMs() : 5 * 60_000L) + 10_000L;
+                screenLock.acquire(limit);
+            } else if (screenLock != null && screenLock.isHeld()) {
+                screenLock.release();
+            }
+        } catch (RuntimeException ignored) {
+            // without the lock the window flag still helps while unlocked
+        }
+    }
+
     /** Ends the capture. Safe to call more than once. */
     private void stop(String reason) {
         if (finished || id == null) {
             return;
         }
         finished = true;
+        keepScreenOn(false);
         main.removeCallbacks(poll);
         long duration = audio != null ? audio.stop() : 0;
         long speech = detector != null ? detector.speechMs() : 0;
@@ -264,8 +339,11 @@ public class CaptureSession extends VoiceInteractionSession {
             });
             CaptureScheduler.enqueueInbox(app, captureId);
         });
+        if (field != null) {
+            field.release();
+        }
         if (!"hidden".equals(reason)) {
-            setText(R.string.capture_got_it, 0);
+            fadeToSaved();
             buzz();
             main.postDelayed(this::finish, GOT_IT_MS);
         }
@@ -281,6 +359,7 @@ public class CaptureSession extends VoiceInteractionSession {
     @Override
     public void onDestroy() {
         stop("hidden");
+        keepScreenOn(false);
         main.removeCallbacksAndMessages(null);
         super.onDestroy();
     }
@@ -294,6 +373,70 @@ public class CaptureSession extends VoiceInteractionSession {
         } catch (RuntimeException ignored) {
             // no haptics is fine
         }
+    }
+
+    static String clock(long ms) {
+        long s = Math.max(0, ms / 1000);
+        return String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60);
+    }
+
+    /** Shade fades in with the smoke; the words follow a moment later. Honours "Remove animations". */
+    private void fadeIn() {
+        if (backdrop != null) {
+            backdrop.animate().cancel();
+            backdrop.setAlpha(0f);
+            backdrop.animate().alpha(1f).setStartDelay(0).setDuration(600)
+                    .setInterpolator(new DecelerateInterpolator(1.5f)).start();
+        }
+        for (View w : words()) {
+            w.animate().cancel();
+            w.setAlpha(0f);
+            w.animate().alpha(1f).setStartDelay(250).setDuration(400).start();
+        }
+    }
+
+    /**
+     * After a stop: the words cross-fade to "saved", then everything fades out with the smoke
+     * (the smoke's own dissolve takes 1.2 s; the session closes at {@link #GOT_IT_MS}).
+     */
+    private void fadeToSaved() {
+        if (dot != null) {
+            dot.animate().cancel();
+            dot.animate().alpha(0f).setStartDelay(0).setDuration(200).start();
+        }
+        View[] text = {title, hint};
+        for (View w : text) {
+            if (w != null) {
+                w.animate().cancel();
+                w.animate().alpha(0f).setStartDelay(0).setDuration(200).start();
+            }
+        }
+        main.postDelayed(() -> {
+            setText(R.string.capture_got_it, R.string.capture_got_it_hint);
+            for (View w : text) {
+                if (w != null) {
+                    w.animate().alpha(1f).setStartDelay(0).setDuration(250).start();
+                }
+            }
+        }, 200);
+        main.postDelayed(() -> {
+            for (View w : words()) {
+                w.animate().alpha(0f).setStartDelay(0).setDuration(450).start();
+            }
+            if (backdrop != null) {
+                backdrop.animate().alpha(0f).setStartDelay(0).setDuration(500).start();
+            }
+        }, 750);
+    }
+
+    private List<View> words() {
+        List<View> out = new ArrayList<>();
+        for (View w : new View[] {dot, title, timer, hint}) {
+            if (w != null) {
+                out.add(w);
+            }
+        }
+        return out;
     }
 
     private void setText(int titleRes, int hintRes) {

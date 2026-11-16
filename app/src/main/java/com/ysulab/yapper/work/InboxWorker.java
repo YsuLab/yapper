@@ -11,6 +11,7 @@ import com.ysulab.yapper.R;
 import com.ysulab.yapper.YapId;
 import com.ysulab.yapper.capture.CaptureMeta;
 import com.ysulab.yapper.capture.CaptureStore;
+import com.ysulab.yapper.capture.SharedItems;
 import com.ysulab.yapper.settings.Settings;
 import com.ysulab.yapper.vault.InboxNote;
 import com.ysulab.yapper.vault.VaultAccess;
@@ -57,19 +58,32 @@ public final class InboxWorker extends Worker {
             DocumentFile inbox = vault.dir(InboxNote.INBOX_DIR);
             DocumentFile attachments = vault.dir(InboxNote.INBOX_DIR, InboxNote.ATTACHMENTS_DIR);
 
-            File audio = m.audioFile.isEmpty() ? null : store.file(id, m.audioFile);
-            boolean hasAudio = audio != null && audio.isFile() && audio.length() > 0;
-            if (hasAudio) {
-                vault.copyIn(attachments, InboxNote.audioName(m), audio);
+            boolean hasAudio = false;
+            for (String part : m.parts()) {
+                File audio = store.file(id, part);
+                if (audio.isFile() && audio.length() > 0) {
+                    vault.copyIn(attachments, InboxNote.audioName(m, part), audio);
+                    hasAudio = true;
+                }
             }
             File shot = store.file(id, CaptureStore.SCREENSHOT);
             boolean hasShot = "saved".equals(m.screenshot) && shot.isFile();
             if (hasShot) {
                 vault.copyIn(attachments, InboxNote.screenshotName(m), shot);
             }
+            // Shared from another app: copy each file next to the audio. Only files that made it into
+            // the bundle are listed in meta, so a missing one here means the bundle was damaged.
+            for (String shared : m.sharedFiles) {
+                File f = store.file(id, shared);
+                if (f.isFile()) {
+                    vault.copyIn(attachments, SharedItems.vaultName(id, shared), f);
+                }
+            }
             String screenText = store.readText(id, CaptureStore.SCREEN_TEXT);
+            String sharedText = store.readText(id, SharedItems.TEXT_FILE);
             String name = InboxNote.fileName(m);
-            vault.createNote(inbox, name, InboxNote.build(m, screenText, hasShot, hasAudio), YapId.marker(id));
+            vault.createNote(inbox, name, InboxNote.build(m, screenText, hasShot, hasAudio, sharedText),
+                    YapId.marker(id));
 
             String path = InboxNote.INBOX_DIR + "/" + name;
             store.update(id, x -> {

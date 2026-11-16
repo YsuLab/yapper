@@ -36,7 +36,7 @@ Rule: **commit first, then offer Undo.** No confirmation screen except for low-c
 - **Ramble mode** — tap to start; records with screen off (foreground service, `microphone` type), stop from
   the notification. Up to ~60 min.
 - **Morning plan / evening debrief** — M5.
-- **Ask your vault** — later.
+- **Ask your vault** — ask by side key ("what did I say about GCP last week?"); the sorter routes it to `ask_vault`, the answer comes back as a notification with links to the source notes.
 
 ## 4. Architecture
 
@@ -55,9 +55,10 @@ Side key
 - **Audio:** record to file (AAC/m4a or Opus). Audio is the source of truth.
 - **Transcriber (pluggable):** Saudi Arabic + English code-switching. Benchmark ~10 real clips in M1; pick by
   accuracy on his speech, then latency, then cost. Check current docs on whether the Claude API takes audio.
-- **Sorter (LLM):** Claude Messages API, paid from the owner's linked Console org credits. Vision + tool use.
-  Configurable model ID; start `claude-sonnet-5-5`, test `claude-haiku-5-5`. Prompt caching for rules + index.
-  Provider interface so a GLM provider can be added later (not now).
+- **Sorter (LLM):** any model behind an OpenAI-compatible `/v1/chat/completions` endpoint with tool calls and
+  image input. Base URL + model ID + key are settings. Default: OpenRouter with a Claude Sonnet model as the
+  quality baseline. Same client works for a self-hosted vLLM / llama.cpp server on the home lab. Prompt caching
+  for rules + index where the provider supports it. See decisions 2026-11-09 (Models).
 - **Vault writer:** Obsidian vault on the phone via Storage Access Framework (persisted tree URI). Plain markdown.
 - **Reminders:** Microsoft Graph To Do → Samsung Reminder (two-way sync, one list). MSAL Android, personal
   account, delegated `Tasks.ReadWrite`. `todoTask` with `reminderDateTime` + `isReminderOn: true`.

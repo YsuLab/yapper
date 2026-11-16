@@ -287,3 +287,17 @@ Newest first. Format: date — decision — why.
 - A 40 % dark shade behind the sheet only, as a tall gradient that starts above the sheet (no top edge). It fades in over 0.6 s and out with the smoke.
 - The words fade in 0.25 s after the press, cross-fade to "saved", then fade out with the dissolve. Nothing pops.
 - No hard lines: the text band dims the smoke over 0.3 of the height, the dark under the words builds up to the bottom edge, and rings fade before the top edge.
+
+### 2026-11-11 — Stable APK signing
+- **Claude generated the release keystore** (PKCS12, alias `yapper`, RSA 4096, valid 100 years) instead of the
+  owner running keytool. Owner asked for zero effort. The key lives only in the private project files
+  (`release/signing/`) and in GitHub secrets, never in this public repo, logs or PR text. Supersedes "the key never
+  touches Claude" from M0.
+- **Owner pastes the four secrets.** The cloud proxy blocks the Actions secrets API, so Claude cannot set them.
+  Workflow and Gradle signing code stay unchanged: every branch (main and all stacked PRs) already signs with
+  the secrets when present, so one paste covers every same-repo build.
+- **Release path verified before the secrets exist.** A temporary CI run built `assembleRelease` on the full
+  feature stack with a throwaway key, so the first real signed build is not also the first test of that path.
+- **One last uninstall.** The installed app is debug-signed; the first release-signed APK needs a clean install
+  (app data, saved API keys and the vault folder grant are lost once). After that, updates install in place.
+  Note: `versionCode` = run number, so installing an older run's APK over a newer one is refused as a downgrade.

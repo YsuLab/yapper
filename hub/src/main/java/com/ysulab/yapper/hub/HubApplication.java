@@ -25,6 +25,11 @@ public class HubApplication {
         Path parent = Path.of(db).toAbsolutePath().getParent();
         if (parent != null) {
             Files.createDirectories(parent);
+            String result = Restore.applyIfAsked(Path.of(db),
+                    Path.of(System.getenv().getOrDefault("HUB_BACKUP_DIR", "./data/backups")));
+            if (result != null) {
+                System.out.println("[hub] " + result);
+            }
         }
         SpringApplication.run(HubApplication.class, args);
     }

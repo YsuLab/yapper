@@ -10,7 +10,7 @@ RUN chmod +x gradlew && ./gradlew --no-daemon -p hub bootJar -Dorg.gradle.jvmarg
 FROM eclipse-temurin:21-jre-noble
 # sqlite3 is only for looking at or restoring a backup by hand.
 # Runs as root inside the container so the ./data bind mount works with no chown on the host.
-# The container publishes no port; only the tunnel reaches it.
+# The container publishes no port itself; Dokploy (Traefik) routes HTTPS to port 8080.
 RUN apt-get update && apt-get install -y --no-install-recommends sqlite3 && rm -rf /var/lib/apt/lists/*
 COPY --from=build /src/hub/build/libs/yapper-hub.jar /app/yapper-hub.jar
 ENV HUB_DB=/data/hub.db HUB_BACKUP_DIR=/data/backups \

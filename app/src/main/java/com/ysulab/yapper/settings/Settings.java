@@ -163,6 +163,11 @@ public final class Settings {
         return prefs.getString("hub_url", com.ysulab.yapper.hub.HubClient.DEFAULT_URL);
     }
 
+    /** This device's hub token ("" when none). */
+    public String hubToken() {
+        return secrets.get("hub_token");
+    }
+
     public boolean hasHubToken() {
         return !secrets.get("hub_token").isEmpty();
     }

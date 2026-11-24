@@ -15,6 +15,7 @@ public class HubProperties {
     private String backupDir = "./data/backups";
     private int backupKeep = 14;
     private int archiveAfterDays = 30;
+    private String corsOrigins = "https://appassets.androidplatform.net";
 
     public String getDb() { return db; }
     public void setDb(String db) { this.db = db; }
@@ -28,6 +29,9 @@ public class HubProperties {
     public void setBackupKeep(int backupKeep) { this.backupKeep = backupKeep; }
     public int getArchiveAfterDays() { return archiveAfterDays; }
     public void setArchiveAfterDays(int archiveAfterDays) { this.archiveAfterDays = archiveAfterDays; }
+
+    public String getCorsOrigins() { return corsOrigins; }
+    public void setCorsOrigins(String corsOrigins) { this.corsOrigins = corsOrigins; }
 
     public ZoneId zoneId() {
         return ZoneId.of(zone);

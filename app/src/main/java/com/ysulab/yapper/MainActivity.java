@@ -121,6 +121,10 @@ public class MainActivity extends Activity {
         hubUrl.setText(settings.hubUrl());
         hubToken.setHint(settings.hasHubToken() ? R.string.hint_hub_token_saved : R.string.hint_hub_token);
         ((Button) findViewById(R.id.btn_hub_test)).setOnClickListener(v -> testHub());
+        ((Button) findViewById(R.id.btn_board)).setOnClickListener(v -> {
+            save();
+            startActivity(new android.content.Intent(this, com.ysulab.yapper.board.BoardActivity.class));
+        });
         ((Button) findViewById(R.id.btn_hub_import)).setOnClickListener(v -> {
             save();
             com.ysulab.yapper.work.CaptureScheduler.enqueueVaultImport(this);
@@ -323,7 +327,7 @@ public class MainActivity extends Activity {
             try {
                 com.ysulab.yapper.hub.HubClient.Response r = hub.health();
                 msg = r.ok() ? "Hub OK: " + com.ysulab.yapper.sort.JsonHttp.snippet(r.body)
-                        : r.code == 401 ? "The hub refused the phone token." : "Hub answered HTTP " + r.code;
+                        : r.code == 401 ? "The hub refused this device token." : "Hub answered HTTP " + r.code;
             } catch (Exception e) {
                 msg = "Hub out of reach: " + e.getClass().getSimpleName();
             }

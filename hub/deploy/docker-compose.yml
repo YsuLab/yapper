@@ -1,6 +1,6 @@
-# Yapper hub on the VPS. Run from the repository root:
-#   docker compose -f hub/deploy/docker-compose.yml up -d --build
-# Secrets live in hub/deploy/.env (never committed). Copy env.example to .env first.
+# Plain Docker alternative to Dokploy (Dokploy is the normal way: see hub/README.md).
+# Run from the repository root:  docker compose -f hub/deploy/docker-compose.yml up -d --build
+# Then put a reverse proxy with HTTPS in front of 127.0.0.1:8080.
 services:
   hub:
     build:
@@ -8,19 +8,11 @@ services:
       dockerfile: hub/Dockerfile
     container_name: yapper-hub
     restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./data:/data
-    # No published port: only cloudflared reaches it, over the compose network.
-    mem_limit: 450m
-
-  tunnel:
-    # Cloudflare Tunnel: HTTPS for board.yasiraloufi.dev with no open port on the VPS.
-    image: cloudflare/cloudflared:2026.10.7
-    container_name: yapper-tunnel
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
     environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
-    depends_on:
-      - hub
+      - HUB_TOKENS=${HUB_TOKENS}
+      - HUB_ZONE=Asia/Riyadh
+    volumes:
+      - /srv/yapper-hub:/data
+    ports:
+      - "127.0.0.1:8080:8080"
+    mem_limit: 450m

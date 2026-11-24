@@ -4,53 +4,62 @@ A small backend that holds Yasir's tasks, raw transcripts and drawing pages, and
 Yapper (phone) sends tasks to it; the board (Tab S9, also the phone) shows and changes them.
 
 ```
-Yapper (phone)  <-->  Hub (Oracle VPS, Docker)  <-->  Today board (tablet browser, installed)
-                          ^ HTTPS via Cloudflare Tunnel: https://board.yasiraloufi.dev
+Yapper (phone)  <-->  Hub (Contabo VPS, Dokploy)  <-->  Yapper "Today" mode (tablet, full screen)
+                          ^ HTTPS by Dokploy (Traefik + Let's Encrypt): https://board.yasiraloufi.dev
 ```
 
-- Code: `src/main/java/.../hub/`. API: `ApiController` (spec section 3). Board: `src/main/resources/static/`.
+- Code: `src/main/java/.../hub/`. API: `ApiController` (spec section 3). Board page: `src/main/resources/static/`.
+  The same page is built into the APK (`assets/board/`) for the tablet mode, and also served by the hub for any
+  browser.
 - Tests: `./gradlew -p hub test` (from the repo root). Run locally:
   `HUB_TOKENS=me=$(openssl rand -hex 32) ./gradlew -p hub bootRun`, then open http://localhost:8080.
-- Data: one SQLite file, `/data/hub.db` in the container (`hub/deploy/data/` on the VPS).
+- Data: one SQLite file, `/data/hub.db` in the container (`/srv/yapper-hub/` on the server).
 
-## Set it up on the VPS (once, about 15 minutes)
+## Set it up in Dokploy (once, about 10 minutes)
 
-1. **Get the code** on the VPS (Docker with the compose plugin is already there for Syncthing):
-   `git clone https://github.com/YsuLab/yapper && cd yapper`
-2. **Make two device tokens**: run `openssl rand -hex 32` twice. One for the phone, one for the tablet.
-3. **Cloudflare Tunnel** (Cloudflare dashboard → Zero Trust → Networks → Tunnels → Create a tunnel →
-   Cloudflared). Name it `yapper`. On the "install connector" step copy only the long token. Add a public
-   hostname: subdomain `board`, domain `yasiraloufi.dev`, service type `HTTP`, URL `hub:8080`.
-   Cloudflare creates the DNS record itself. No port opens on the VPS.
-4. **Secrets**: `cp hub/deploy/env.example hub/deploy/.env`, then put the two tokens in `HUB_TOKENS`
-   (`phone=…,tablet=…`) and the tunnel token in `TUNNEL_TOKEN`. `.env` is git-ignored.
-5. **Start**: `docker compose -f hub/deploy/docker-compose.yml up -d --build` (the first build takes a few
-   minutes). Check: `curl -s https://board.yasiraloufi.dev/api/health -H "Authorization: Bearer <phone token>"`
+1. **Two device tokens**: run `openssl rand -hex 32` twice. One for the phone, one for the tablet.
+2. **DNS** (Cloudflare): an `A` record `board` → the Contabo server's IP, **DNS only** (grey cloud), so
+   Dokploy's Let's Encrypt certificate works without extra settings.
+3. **Dokploy** → your project → *Create Service* → *Application*, name `yapper-hub`:
+   - *Provider*: GitHub (or Git with `https://github.com/YsuLab/yapper`), branch `main`.
+   - *Build Type*: **Dockerfile**. *Docker File*: `hub/Dockerfile`. *Docker Context Path*: `.` (the repo root).
+   - *Environment*: `HUB_TOKENS=phone=<first token>,tablet=<second token>`
+   - *Advanced → Volumes/Mounts*: bind mount host path `/srv/yapper-hub` → mount path `/data`
+     (the database and backups live there and survive redeploys). Create the folder first on the server:
+     `sudo mkdir -p /srv/yapper-hub` (Docker Swarm, which Dokploy uses, will not create it).
+   - *Domains*: host `board.yasiraloufi.dev`, path `/`, container port `8080`, HTTPS on, certificate
+     Let's Encrypt.
+   - *Deploy*. The first build takes a few minutes.
+4. **Check**: `curl -s https://board.yasiraloufi.dev/api/health -H "Authorization: Bearer <phone token>"`
    answers `{"ok":true,"device":"phone",...}`.
 
-Update later: `git pull && docker compose -f hub/deploy/docker-compose.yml up -d --build`.
-Revoke a device: remove its pair from `HUB_TOKENS`, then `docker compose -f hub/deploy/docker-compose.yml up -d`.
+Update later: *Deploy* again in Dokploy (or turn on auto-deploy for `main`).
+Revoke a device: remove its pair from `HUB_TOKENS` and redeploy.
+No Dokploy? `hub/deploy/docker-compose.yml` runs the same image on plain Docker (put HTTPS in front).
 
 ## Devices
 
-- **Phone (Yapper)**: Settings → Today board → paste the phone token → *Save* → *Test the hub*. Then
+- **Phone (Yapper)**: Settings → Today board → paste the **phone** token → *Save* → *Test the hub*. Then
   *Send open vault tasks to the board (once)*.
-- **Tablet**: in Chrome open `https://board.yasiraloufi.dev/#t=<tablet token>` (the token leaves the address
-  bar at once and stays on the tablet), then ⋮ → *Add to home screen* → *Install*. Open it from the home screen:
-  it runs full screen. Or open the plain address and paste the token on the first screen.
-- The same page works on the phone (one column). Give the phone browser its own token if you like.
+- **Tablet**: install the same Yapper APK. Settings → Today board → paste the **tablet** token → *Save*. A
+  **Today** icon is on the home screen: it opens the board full screen, and the screen stays on while the
+  tablet is charging. The board's own screen care (8 px shift every 4 min, dim after 10 idle min, black
+  01:00–06:00, moon button) protects the panel. Drawing pages save to Pictures/Yapper.
+- Any browser also works: `https://board.yasiraloufi.dev/#t=<token>`.
 
 ## Backups
 
-- Every night at 03:30 Riyadh the hub writes `data/backups/hub-YYYY-MM-DD.db` (SQLite online backup) and keeps
+- Every night at 03:30 Riyadh the hub writes `/srv/yapper-hub/backups/hub-YYYY-MM-DD.db` (SQLite online backup) and keeps
   14. Done tasks older than 30 days are archived (hidden, never deleted).
-- **Restore**: `sh hub/deploy/restore.sh hub-2026-11-24.db` (stops the hub, keeps the current database as
-  `hub.db.before-restore-…`, copies the backup in, starts the hub).
-- **Test a restore once** (milestone M5):
-  `docker compose -f hub/deploy/docker-compose.yml exec hub sqlite3 /data/hub.db ".backup /data/backups/hub-0000-test.db"`
-  then `sh hub/deploy/restore.sh hub-0000-test.db` and reload the board: the same tasks are there.
+- **Restore**: write the backup's file name into `/srv/yapper-hub/RESTORE`, then restart the app in Dokploy:
+  `echo hub-2026-11-24.db | sudo tee /srv/yapper-hub/RESTORE`. At start the hub checks the backup, keeps the
+  current database as `hub.db.before-restore-…`, copies the backup in and deletes `RESTORE` (a bad name is
+  left as `RESTORE.failed` and nothing changes).
+- **Test a restore once** (milestone M5): make a copy now with
+  `docker exec $(docker ps -qf name=yapper-hub) sqlite3 /data/hub.db ".backup /data/backups/hub-0000-test.db"`,
+  then restore it as above with `hub-0000-test.db` and reload the board: the same tasks are there.
 - **Off-site, weekly** (decision 10): on Sakhr, add to `crontab -e`:
-  `0 5 * * 5 /path/to/yapper/hub/deploy/pull-backup.sh ubuntu@<vps> /home/ubuntu/yapper/hub/deploy/data/backups ~/yapper-hub-backups`
+  `0 5 * * 5 /path/to/yapper/hub/deploy/pull-backup.sh root@<contabo> /srv/yapper-hub/backups ~/yapper-hub-backups`
 
 ## What it stores
 

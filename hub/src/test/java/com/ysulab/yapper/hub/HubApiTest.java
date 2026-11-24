@@ -280,5 +280,42 @@ class HubApiTest {
                 ResultSet rs = c.createStatement().executeQuery("SELECT count(*) FROM task")) {
             assertThat(rs.getInt(1)).isEqualTo(2);
         }
+        // Restore by marker into a fresh folder, as the hub does at start.
+        Path other = Files.createTempDirectory("restore");
+        Path db = other.resolve("hub.db");
+        Files.writeString(db, "current");
+        Files.writeString(other.resolve("RESTORE"), "../../" + b.getFileName() + "\n");
+        assertThat(Restore.applyIfAsked(db, backups)).startsWith("Restored");
+        assertThat(Files.exists(other.resolve("RESTORE"))).isFalse();
+        try (var files = Files.list(other)) {
+            assertThat(files.anyMatch(p -> p.getFileName().toString().startsWith("hub.db.before-restore-"))).isTrue();
+        }
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + db);
+                ResultSet rs = c.createStatement().executeQuery("SELECT count(*) FROM task")) {
+            assertThat(rs.getInt(1)).isEqualTo(2);
+        }
+        // A bad name is refused and the database is left alone.
+        Files.writeString(other.resolve("RESTORE"), "hub-1999-01-01.db");
+        assertThat(Restore.applyIfAsked(db, backups)).startsWith("Restore NOT done");
+        assertThat(Files.exists(other.resolve("RESTORE.failed"))).isTrue();
+        assertThat(Restore.applyIfAsked(db, backups)).isNull();
+    }
+
+    @Test
+    void corsAllowsTheAppOriginOnly() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/tasks")
+                .header("Origin", "https://appassets.androidplatform.net")
+                .header("Access-Control-Request-Method", "PATCH")
+                .header("Access-Control-Request-Headers", "authorization,content-type"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Access-Control-Allow-Origin", "https://appassets.androidplatform.net"));
+        mvc.perform(get("/api/health").header("Origin", "https://evil.example")
+                .header("Authorization", "Bearer " + PHONE)).andExpect(status().isForbidden());
+        // A refused token still answers with CORS headers, so the app sees 401, not a network error.
+        mvc.perform(get("/api/health").header("Origin", "https://appassets.androidplatform.net"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .exists("Access-Control-Allow-Origin"));
     }
 }

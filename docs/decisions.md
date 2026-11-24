@@ -3,13 +3,22 @@
 Newest first. Format: date — decision — why.
 
 
+## 2026-11-24 — Hub on Dokploy, board inside the Yapper app (owner's change, same day)
+- **Dokploy on Contabo, not Oracle + tunnel.** The owner already runs Dokploy: it builds `hub/Dockerfile` from the
+  repo and gives the domain HTTPS (Traefik + Let's Encrypt). Cloudflare only holds a DNS-only A record.
+- **Tablet mode inside Yapper**, not a separate web app: `BoardActivity` shows the same board page in a WebView,
+  loaded from the APK (`WebViewAssetLoader`), hub URL + token from Yapper's settings via a JS bridge. Same look and
+  behaviour with no second copy of the UI to keep in step (a Gradle task copies the hub's page into the APK).
+  Own launcher icon "Today"; full screen; screen kept on only while charging (on battery it would drain).
+- **CORS** on the hub for the app's origin only (`https://appassets.androidplatform.net`), checked before tokens.
+- **Restore by marker file** (`/srv/yapper-hub/RESTORE`), checked at start: no compose commands, works in Dokploy.
+
 ## 2026-11-24 — Task hub and Today board
 
 Owner's spec (24 Nov). He did not read it in detail, so every recommendation in its section 8 was taken.
 - **Hub in this repo (`hub/`), its own Gradle build.** Spring Boot 3.5 + one SQLite file, JdbcTemplate (no JPA:
   less memory on a 2 GB VPS), one pooled connection (SQLite has one writer). Heap 256 MB, serial GC.
-- **HTTPS through a Cloudflare Tunnel**, not an open port. Oracle images block inbound ports in two places
-  (security list + iptables); the tunnel needs neither and Cloudflare serves the certificate.
+- ~~HTTPS through a Cloudflare Tunnel~~ (replaced the same day by Dokploy, above).
 - **Per-device tokens in `HUB_TOKENS`** (`phone=…,tablet=…`), compared as SHA-256 in constant time. Revoke one by
   removing it and restarting. The board's static files are public; they hold no data.
 - **Backup inside the hub**, 03:30 Riyadh, SQLite online backup (`backup to`, same as `.backup`), keeps 14. No host

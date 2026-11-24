@@ -297,7 +297,7 @@ body.rest .unsorted{opacity:.5;transition:opacity 1.2s ease}
   <form class="gate-card" id="gateForm" autocomplete="off">
     <span data-mark></span>
     <h2>Connect this board</h2>
-    <p>Paste this device&rsquo;s token for the hub. It stays on this device, and you only do this once.</p>
+    <p>Paste this device&rsquo;s token for the hub (the <code>tablet=</code> value). It stays on this device, and you only do this once.</p>
     <div class="field"><input id="gateToken" type="password" placeholder="Device token" aria-label="Device token" autocapitalize="off" spellcheck="false"></div>
     <button type="submit" class="btn solid">Connect</button>
     <p class="caption" id="gateMsg" role="status"></p>
@@ -454,18 +454,23 @@ function stepDust() {
 // Writes go through an outbox kept in localStorage, so a change made offline is sent when the hub is back.
 const TOKEN_KEY = 'board.token', OUTBOX_KEY = 'board.outbox', CACHE_KEY = 'board.tasks.cache';
 const POLL_MS = 15000;
-let token = local.get(TOKEN_KEY, '') || '';
+// Inside the Yapper app (tablet mode) the page comes from the APK; the hub URL and this device's token
+// come from Yapper's settings through the YapperBoard bridge. In a browser it is served by the hub itself.
+const APP = (typeof window.YapperBoard === 'object' && window.YapperBoard) ? window.YapperBoard : null;
+const HUB = APP ? String(APP.hubUrl() || '').replace(/\/+$/, '') : '';
+let token = APP ? String(APP.token() || '') : (local.get(TOKEN_KEY, '') || '');
+function keepToken(v) { if (APP) APP.setToken(v); else local.set(TOKEN_KEY, v); }
 (function takeTokenFromLink() {
   // One-time setup link: https://board.example/#t=TOKEN. The token leaves the address bar at once.
   const m = location.hash.match(/[#&]t=([A-Za-z0-9._~-]{24,})/);
-  if (m) { token = m[1]; local.set(TOKEN_KEY, token); window.history.replaceState(null, '', location.pathname + location.search); }
+  if (m) { token = m[1]; keepToken(token); window.history.replaceState(null, '', location.pathname + location.search); }
 })();
 
 function Unauthorized() { this.code = 401; }
 function api(method, path, body) {
   const opt = { method, headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' };
   if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
-  return fetch(path, opt).then(r => {
+  return fetch(HUB + path, opt).then(r => {
     if (r.status === 401) throw new Unauthorized();
     const ct = r.headers.get('content-type') || '';
     return (ct.indexOf('json') >= 0 ? r.json().catch(() => null) : Promise.resolve(null)).then(j => ({ status: r.status, json: j }));
@@ -971,6 +976,11 @@ $('saveBtn').addEventListener('click', () => {
   const out = document.createElement('canvas'), W = 2000, H = Math.round(2000 * cssH / cssW), c = out.getContext('2d');
   out.width = W; out.height = H; c.fillStyle = tok('--card'); c.fillRect(0, 0, W, H);
   for (const s of strokes) drawStroke(c, s, W);
+  if (APP) {
+    const ok = APP.savePng('page-' + pageDay + '.png', out.toDataURL('image/png').split(',')[1]);
+    status(ok ? 'Page saved to Pictures/Yapper.' : 'The image could not be saved.');
+    return;
+  }
   out.toBlob(blob => {
     if (!blob) { status('The image could not be made.'); return; }
     const a = document.createElement('a');
@@ -1113,7 +1123,7 @@ $('gateForm').addEventListener('submit', e => {
   const was = token; token = v;
   api('GET', '/api/health').then(res => {
     if (res.status !== 200) throw new Error('hub ' + res.status);
-    local.set(TOKEN_KEY, token); $('gateToken').value = ''; $('gate').hidden = true; start();
+    keepToken(token); $('gateToken').value = ''; $('gate').hidden = true; start();
   }).catch(err => {
     token = was;
     $('gateMsg').textContent = err instanceof Unauthorized ? 'The hub did not accept that token.' : 'The hub is out of reach. Check the connection and try again.';
@@ -1145,7 +1155,8 @@ setInterval(shiftPixels, 4 * 60e3);
 setInterval(() => { if (sleeping) driftSleep(); }, 60e3);
 
 if (token) start(); else showGate('');
-if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* fine */ } }
+if (APP) $('fullBtn').hidden = true; // the app is already full screen
+if (!APP && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* fine */ } }
 })();
 </script>
 </body>

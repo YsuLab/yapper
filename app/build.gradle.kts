@@ -54,10 +54,23 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    // The Today board page lives in the hub (hub/src/main/resources/static). The app's tablet mode shows
+    // the same file, copied into assets/board/ at build time, so the two never drift apart.
+    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/boardAssets"))
 }
+
+val copyBoard by tasks.registering(Copy::class) {
+    from(rootProject.file("hub/src/main/resources/static")) {
+        include("index.html", "icon-192.png")
+    }
+    into(layout.buildDirectory.dir("generated/boardAssets/board"))
+}
+tasks.named("preBuild") { dependsOn(copyBoard) }
 
 dependencies {
     implementation("androidx.work:work-runtime:2.11.2")
+    implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.documentfile:documentfile:1.1.0")
     implementation("androidx.annotation:annotation:1.9.1")
     testImplementation("junit:junit:4.13.2")

@@ -6,4 +6,3 @@
 hub/build/
 hub/.gradle/
 hub/data/
-hub/deploy/.env

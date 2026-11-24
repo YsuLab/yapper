@@ -252,6 +252,13 @@
             android:singleLine="true" />
 
         <Button
+            android:id="@+id/btn_board"
+            style="@style/Yapper.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_board" />
+
+        <Button
             android:id="@+id/btn_hub_test"
             style="@style/Yapper.Button"
             android:layout_width="match_parent"

@@ -45,7 +45,7 @@ public class TokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
-        return !req.getRequestURI().startsWith("/api/");
+        return !req.getRequestURI().startsWith("/api/") || "OPTIONS".equals(req.getMethod());
     }
 
     @Override

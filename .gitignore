@@ -24,5 +24,3 @@ __pycache__/
 
 # Hub runtime data (database, backups) and its secrets
 hub/data/
-hub/deploy/data/
-hub/deploy/.env

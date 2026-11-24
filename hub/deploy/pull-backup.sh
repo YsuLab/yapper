@@ -1,6 +1,6 @@
 #!/bin/sh
 # Weekly off-site copy of the hub's newest nightly backup. Run on Sakhr (home lab), from cron:
-#   0 5 * * 5  /path/to/pull-backup.sh ubuntu@VPS_HOST /path/to/yapper/hub/deploy/data/backups ~/yapper-hub-backups
+#   0 5 * * 5  /path/to/pull-backup.sh root@VPS_HOST /srv/yapper-hub/backups ~/yapper-hub-backups
 # Keeps 8 weekly copies. Needs SSH key access to the VPS.
 set -eu
 SRC_HOST="$1"; SRC_DIR="$2"; DEST="$3"

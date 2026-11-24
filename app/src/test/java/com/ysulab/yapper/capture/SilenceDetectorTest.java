@@ -31,6 +31,17 @@ public class SilenceDetectorTest {
     }
 
     @Test
+    public void rambleGetsALongerPauseBeforeStopping() {
+        SilenceDetector d = new SilenceDetector(2000, 6000, 300_000);
+        feed(d, 200, 0, 400);
+        assertEquals(Decision.CONTINUE, feed(d, 8000, 400, 8000));    // 7.6 s of talking
+        assertEquals(Decision.CONTINUE, feed(d, 200, 8000, 11_500));  // 3.5 s thinking pause: keep going
+        assertEquals(Decision.CONTINUE, feed(d, 8000, 11_500, 12_000));
+        assertEquals(Decision.CONTINUE, feed(d, 200, 12_000, 15_900));
+        assertEquals(Decision.STOP_SILENCE, d.onSample(200, 16_100)); // 4.1 s: done
+    }
+
+    @Test
     public void shortPauseDoesNotStop() {
         SilenceDetector d = new SilenceDetector(2000, 6000, 300_000);
         feed(d, 200, 0, 400);

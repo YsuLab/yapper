@@ -29,7 +29,7 @@ class ScoreTest(unittest.TestCase):
         self.assertIn("- Mon 2026-11-09: Fajr ", sys_text)
         self.assertIn("Fri 2026-11-13", sys_text)
         self.assertNotIn("Tue 2026-11-17", sys_text)  # 8 days only
-        self.assertEqual(10, len(body["tools"]))
+        self.assertEqual(11, len(body["tools"]))
         self.assertIn("cache_control", body["messages"][0]["content"][0])
         self.assertNotIn("cache_control", run_eval.request(case, "qwen/x")["messages"][0]["content"][0])
 
@@ -55,6 +55,12 @@ class ScoreTest(unittest.TestCase):
         case = {"expect": [{"tool": "create_note", "path_prefix": "Projects/"}]}
         self.assertTrue(run_eval.score(case, [{"tool": "create_note", "path": "Projects/Nawa"}])[0])
         self.assertFalse(run_eval.score(case, [{"tool": "create_note", "path": "Personal/Nawa"}])[0])
+
+    def test_timed_task_counts_as_reminder(self):
+        case = {"expect": [{"tool": "create_reminder", "remind_at": "2026-11-12T23:59:00+03:00"}]}
+        self.assertTrue(run_eval.score(case, [{"tool": "add_task", "text": "OS assignment 3",
+                                               "due": "2026-11-12T23:59:00+03:00"}])[0])
+        self.assertFalse(run_eval.score(case, [{"tool": "add_task", "text": "OS assignment 3"}])[0])
 
 
 if __name__ == "__main__":

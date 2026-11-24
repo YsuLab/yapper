@@ -227,6 +227,56 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:accessibilityHeading="true"
+            android:text="@string/section_hub" />
+
+        <TextView
+            style="@style/Yapper.Hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/hub_help" />
+
+        <EditText
+            android:id="@+id/hub_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_hub_url"
+            android:inputType="textUri"
+            android:singleLine="true" />
+
+        <EditText
+            android:id="@+id/hub_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_hub_token"
+            android:inputType="textPassword"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/btn_board"
+            style="@style/Yapper.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_board" />
+
+        <Button
+            android:id="@+id/btn_hub_test"
+            style="@style/Yapper.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_hub_test" />
+
+        <Button
+            android:id="@+id/btn_hub_import"
+            style="@style/Yapper.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_hub_import" />
+
+        <TextView
+            style="@style/Yapper.SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
             android:text="@string/section_reminders" />
 
         <TextView

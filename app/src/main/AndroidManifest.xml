@@ -38,6 +38,29 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- Today board: tablet always-on display. Its own launcher icon ("Today") through the alias. -->
+        <activity
+            android:name=".board.BoardActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:screenOrientation="fullUser"
+            android:taskAffinity="com.ysulab.yapper.board" />
+
+        <activity-alias
+            android:name=".TodayBoard"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/board_label"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity=".board.BoardActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- M3: Microsoft sign-in redirect (yapper://auth) and To Do list picker -->
         <activity
             android:name=".reminders.AuthActivity"

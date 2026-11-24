@@ -24,6 +24,13 @@ public final class SortAction {
     public static final String REVIEW = "weekly_review";
     /** Ask your vault: a question to answer from his notes (no vault write; AnswerWorker answers it). */
     public static final String ASK_VAULT = "ask_vault";
+    /** A task for the hub and the Today board. Never a "- [ ]" line in the vault. */
+    public static final String TASK = "add_task";
+    /**
+     * Not a model tool: made by the app for anything the sorter could not place (a split item it did
+     * not file, or a sentence no item covers). Goes to the board's "Unsorted" strip.
+     */
+    public static final String UNSORTED = "unsorted";
 
     /** One plan_day time block. */
     public static final class Block {
@@ -65,6 +72,12 @@ public final class SortAction {
     /** ask_vault: optional YYYY-MM-DD range the question is about. */
     public String since = "";
     public String until = "";
+    /** add_task / unsorted: his exact words from the transcript. */
+    public String quote = "";
+    /** add_task: the sorter is not sure this is a task → the board's Unsorted strip. */
+    public boolean unsure;
+    /** Split-then-sort: the pass-1 item this call files (1-based), or 0 when not given. */
+    public int item;
 
     public SortAction(String tool) {
         this.tool = tool;
@@ -171,9 +184,20 @@ public final class SortAction {
                 s.since = optDate(a.optString("since", ""));
                 s.until = optDate(a.optString("until", ""));
                 break;
+            case TASK:
+                s.title = oneLine(req(a, "text"));
+                s.quote = oneLine(a.optString("quote", ""));
+                s.unsure = a.optBoolean("unsure", false);
+                String due = a.optString("due", "").trim();
+                if (!due.isEmpty()) {
+                    java.time.OffsetDateTime.parse(due); // throws DateTimeParseException if bad
+                    s.remindAt = due;
+                }
+                break;
             default:
                 throw new JSONException("unknown tool " + name);
         }
+        s.item = Math.max(0, a.optInt("item", 0));
         return s;
     }
 
@@ -205,6 +229,15 @@ public final class SortAction {
             o.put("wentWell", new JSONArray(wentWell));
             o.put("better", new JSONArray(better));
             o.put("focus", new JSONArray(focus));
+        }
+        if (!quote.isEmpty()) {
+            o.put("quote", quote);
+        }
+        if (unsure) {
+            o.put("unsure", true);
+        }
+        if (item > 0) {
+            o.put("item", item);
         }
         if (ASK_VAULT.equals(tool)) {
             o.put("terms", new JSONArray(terms));
@@ -252,6 +285,9 @@ public final class SortAction {
         strings(o.optJSONArray("terms"), s.terms);
         s.since = o.optString("since", "");
         s.until = o.optString("until", "");
+        s.quote = o.optString("quote", "");
+        s.unsure = o.optBoolean("unsure", false);
+        s.item = o.optInt("item", 0);
         return s;
     }
 

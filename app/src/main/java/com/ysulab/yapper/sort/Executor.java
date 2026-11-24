@@ -88,6 +88,10 @@ public final class Executor {
                 case SortAction.REVIEW:
                     review(log, a, marker);
                     break;
+                case SortAction.TASK:
+                case SortAction.UNSORTED:
+                    task(log, a, marker);
+                    break;
                 default:
                     break;
             }
@@ -239,6 +243,35 @@ public final class Executor {
             e.title = a.title;
             e.remindAt = a.remindAt;
             e.notes = a.markdown.trim();
+        }
+    }
+
+    static final String TASKS_SECTION = "Tasks added";
+
+    /**
+     * add_task: the task itself goes to the hub (SortWorker sends it). The vault gets only a plain
+     * history line in today's daily note, with no checkbox. A task with a time also gets an alarm,
+     * through the same path as create_reminder, but no "⏰" line.
+     */
+    private void task(ActionLog log, SortAction a, String marker) throws IOException {
+        boolean unsorted = SortAction.UNSORTED.equals(a.tool) || a.unsure;
+        String text = a.title.isEmpty() ? a.quote : a.title;
+        StringBuilder line = new StringBuilder(unsorted ? "- Not sure, on the board under Unsorted: " : "- Added task: ")
+                .append(text);
+        OffsetDateTime due = null;
+        if (!a.remindAt.isEmpty()) {
+            due = OffsetDateTime.parse(a.remindAt).atZoneSameInstant(now.getZone()).toOffsetDateTime();
+            line.append(" (due ").append(due.format(DAY)).append(' ').append(due.format(HM)).append(')');
+        }
+        write(log, a.tool, dailyPath(now.format(DAY)), TASKS_SECTION, line.toString(), marker, false,
+                now.format(DAY));
+        if (due != null && !unsorted) {
+            String ref = marker + "#alarm";
+            if (!hasRef(log, ref)) {
+                ActionLog.Entry e = log.add("reminder", dailyPath(due.format(DAY)), ref, a.tool);
+                e.title = text;
+                e.remindAt = a.remindAt;
+            }
         }
     }
 

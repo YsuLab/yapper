@@ -69,6 +69,11 @@ public final class UndoWorker extends Worker {
             m = SortWorker.moveCapture(fs, store, m, InboxNote.INBOX_DIR);
             SortWorker.appendToCapture(fs, m, Summary.undoneBlock(id, r.removed, r.kept));
             store.update(id, x -> x.sorted = "undone");
+            if (store.file(id, HubWorker.PAYLOAD).isFile()) {
+                // Take this capture's tasks off the Today board too (or never send them).
+                store.writeText(id, HubWorker.UNDO, Long.toString(System.currentTimeMillis()));
+                CaptureScheduler.enqueueHub(ctx, id);
+            }
             Notifications.cancelResult(ctx, id);
             Notifications.status(ctx, "Undone",
                     "Removed " + r.removed + (r.kept > 0 ? ", kept " + r.kept + " you edited" : "")

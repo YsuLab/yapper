@@ -31,4 +31,6 @@ public final class SorterInput {
     /** Review mode: the week's note path and its auto-built summary (what he did this week). */
     public String weeklyPath = "";
     public String weekly = "";
+    /** Split-then-sort: the items pass 1 found. Empty = one-pass sorting (as before). */
+    public java.util.List<Splitter.Item> items = new java.util.ArrayList<>();
 }

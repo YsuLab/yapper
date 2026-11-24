@@ -21,3 +21,6 @@ captures/
 keystore.properties
 secrets.properties
 __pycache__/
+
+# Hub runtime data (database, backups) and its secrets
+hub/data/

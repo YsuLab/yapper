@@ -47,6 +47,8 @@ public class MainActivity extends Activity {
     private EditText sorterUrl;
     private EditText sorterModel;
     private EditText sorterKey;
+    private EditText hubUrl;
+    private EditText hubToken;
     private CheckBox sorterShadow;
     private CheckBox sorterMove;
     private CheckBox sorterScreens;
@@ -112,6 +114,23 @@ public class MainActivity extends Activity {
         sorterShadow.setChecked(sc.shadow);
         sorterMove.setChecked(sc.moveSorted);
         sorterScreens.setChecked(sc.screenshots);
+
+        // Today board (task hub)
+        hubUrl = findViewById(R.id.hub_url);
+        hubToken = findViewById(R.id.hub_token);
+        hubUrl.setText(settings.hubUrl());
+        hubToken.setHint(settings.hasHubToken() ? R.string.hint_hub_token_saved : R.string.hint_hub_token);
+        ((Button) findViewById(R.id.btn_hub_test)).setOnClickListener(v -> testHub());
+        ((Button) findViewById(R.id.btn_board)).setOnClickListener(v -> {
+            save();
+            startActivity(new android.content.Intent(this, com.ysulab.yapper.board.BoardActivity.class));
+        });
+        ((Button) findViewById(R.id.btn_hub_import)).setOnClickListener(v -> {
+            save();
+            com.ysulab.yapper.work.CaptureScheduler.enqueueVaultImport(this);
+            Toast.makeText(this, "Reading the vault. A notification says when the tasks are on the board.",
+                    Toast.LENGTH_LONG).show();
+        });
 
         // M4/M5: talk buttons
         ((Button) findViewById(R.id.btn_ramble)).setOnClickListener(v -> ramble("ramble"));
@@ -275,6 +294,10 @@ public class MainActivity extends Activity {
         settings.saveSorter(sc, sk.isEmpty() ? null : ("-".equals(sk) ? "" : sk));
         sorterKey.setText("");
         sorterKey.setHint(settings.hasOwnSorterKey() ? R.string.hint_key_saved : R.string.hint_key);
+        String ht = hubToken.getText().toString().trim();
+        settings.saveHub(hubUrl.getText().toString(), ht.isEmpty() ? null : ("-".equals(ht) ? "" : ht));
+        hubToken.setText("");
+        hubToken.setHint(settings.hasHubToken() ? R.string.hint_hub_token_saved : R.string.hint_hub_token);
         ms.setClientId(msClientId.getText().toString());
         try {
             settings.setAlarmWindowMin(Integer.parseInt(alarmWindow.getText().toString().trim()));
@@ -293,6 +316,24 @@ public class MainActivity extends Activity {
         Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show();
         new Thread(() -> CaptureScheduler.reconcile(getApplicationContext())).start();
         refreshStatus();
+    }
+
+    /** Saves, then calls GET /api/health with the phone token and says what came back. */
+    private void testHub() {
+        save();
+        com.ysulab.yapper.hub.HubClient hub = settings.hub();
+        new Thread(() -> {
+            String msg;
+            try {
+                com.ysulab.yapper.hub.HubClient.Response r = hub.health();
+                msg = r.ok() ? "Hub OK: " + com.ysulab.yapper.sort.JsonHttp.snippet(r.body)
+                        : r.code == 401 ? "The hub refused this device token." : "Hub answered HTTP " + r.code;
+            } catch (Exception e) {
+                msg = "Hub out of reach: " + e.getClass().getSimpleName();
+            }
+            String shown = msg;
+            runOnUiThread(() -> Toast.makeText(this, shown, Toast.LENGTH_LONG).show());
+        }).start();
     }
 
     private enum Mark { READY, NEEDS_YOU, OFF, LIVE }

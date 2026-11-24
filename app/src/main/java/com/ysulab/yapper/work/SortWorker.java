@@ -123,7 +123,9 @@ public final class SortWorker extends Worker {
                 }
                 Sorter.Result r;
                 try {
-                    r = new Sorter(cfg, asset(ctx, "sorter/system.md"), asset(ctx, "sorter/tools.json")).sort(in);
+                    // Spec 4.2: split, then sort, then a coverage check (one pass for short captures).
+                    r = new Sorter(cfg, asset(ctx, "sorter/system.md"), asset(ctx, "sorter/tools.json"))
+                            .sortSplit(in, asset(ctx, "sorter/split.md"));
                 } catch (SortException e) {
                     if (e.retryable && getRunAttemptCount() < MAX_ATTEMPTS) {
                         return Result.retry();
@@ -140,6 +142,8 @@ public final class SortWorker extends Worker {
                 info.setProperty("latencyMs", Long.toString(latency));
                 info.setProperty("dropped", String.join("\n", dropped));
                 info.setProperty("shadow", Boolean.toString(cfg.shadow));
+                info.setProperty("splitItems", Integer.toString(r.splitItems));
+                info.setProperty("filledIn", Integer.toString(r.filledIn));
                 java.io.StringWriter w = new java.io.StringWriter();
                 info.store(w, "sorter run");
                 store.writeText(id, SORT_INFO, w.toString());
@@ -178,6 +182,12 @@ public final class SortWorker extends Worker {
                     new com.ysulab.yapper.reminders.LocalAlarms(ctx), settings.alarmWindowMs())
                     .route(log, System.currentTimeMillis(), acct.isReady());
             store.writeText(id, ACTIONS, log.serialize());
+            // Today board: the transcript and its tasks go to the hub (queued; sent when online).
+            if (!store.file(id, HubWorker.PAYLOAD).isFile()) {
+                store.writeText(id, HubWorker.PAYLOAD, com.ysulab.yapper.hub.HubPayload
+                        .build(id, captured, transcript(store, settings, id), plan).toString());
+            }
+            CaptureScheduler.enqueueHub(ctx, id);
             appendToCapture(fs, m, Summary.sortedBlock(id, plan, model, latency, zone, dropped));
             if (cfg.moveSorted) {
                 m = moveCapture(fs, store, m, CAPTURES_DIR);

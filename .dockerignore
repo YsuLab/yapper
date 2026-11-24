@@ -1,0 +1,9 @@
+# Only the hub image is built with Docker; keep its build context small.
+**
+!gradlew
+!gradle/
+!hub/
+hub/build/
+hub/.gradle/
+hub/data/
+hub/deploy/.env

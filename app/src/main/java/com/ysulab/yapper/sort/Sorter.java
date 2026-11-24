@@ -18,6 +18,21 @@ public final class Sorter {
         public final List<String> dropped = new ArrayList<>();
         public long latencyMs;
         public String model = "";
+        /** Split-then-sort: items pass 1 found (0 = one pass) and how many the app added after pass 2. */
+        public int splitItems;
+        public int filledIn;
+    }
+
+    /** The HTTP call, swappable in tests. */
+    interface Transport {
+        JsonHttp.Response post(String url, Map<String, String> headers, String body) throws IOException;
+    }
+
+    private Transport transport = JsonHttp::post;
+
+    Sorter withTransport(Transport t) {
+        this.transport = t;
+        return this;
     }
 
     private final SorterConfig cfg;
@@ -37,26 +52,68 @@ public final class Sorter {
         } catch (JSONException e) {
             throw new SortException("Could not build request", false, e);
         }
+        long start = System.nanoTime();
+        JsonHttp.Response r = call(body);
+        Result res = parse(r.body);
+        res.latencyMs = (System.nanoTime() - start) / 1_000_000;
+        return res;
+    }
+
+    /**
+     * Split, then sort (spec 4.2): pass 1 lists every item with his exact words, pass 2 files each
+     * numbered item, then {@link Splitter#complete} adds anything still unfiled as a task or an Unsorted
+     * item. Short captures, shares and weekly reviews, or a pass 1 that returns nothing, use one pass.
+     */
+    public Result sortSplit(SorterInput in, String splitTemplate) throws SortException {
+        if (splitTemplate == null || !Splitter.worthSplitting(in)) {
+            return sort(in);
+        }
+        long start = System.nanoTime();
+        Splitter.Split split;
+        try {
+            split = Splitter.parse(call(Splitter.request(cfg, splitTemplate, in).toString()).body);
+        } catch (JSONException e) {
+            throw new SortException("Could not build split request", false, e);
+        } catch (SortException e) {
+            if (e.retryable) {
+                throw e;
+            }
+            split = null; // a malformed pass 1 must not block sorting: fall back to one pass
+        }
+        if (split == null || split.items.isEmpty()) {
+            return sort(in);
+        }
+        long splitMs = (System.nanoTime() - start) / 1_000_000;
+        in.items = split.items;
+        Result res;
+        try {
+            res = sort(in);
+        } finally {
+            in.items = new java.util.ArrayList<>();
+        }
+        res.splitItems = split.items.size();
+        res.filledIn = Splitter.complete(res.actions, split, in.transcript);
+        res.latencyMs += splitMs;
+        return res;
+    }
+
+    private JsonHttp.Response call(String body) throws SortException {
         Map<String, String> headers = new HashMap<>();
         if (cfg.apiKey != null && !cfg.apiKey.trim().isEmpty()) {
             headers.put("Authorization", "Bearer " + cfg.apiKey.trim());
         }
         headers.put("X-Title", "Yapper");
-        long start = System.nanoTime();
         JsonHttp.Response r;
         try {
-            r = JsonHttp.post(cfg.url() + "/chat/completions", headers, body);
+            r = transport.post(cfg.url() + "/chat/completions", headers, body);
         } catch (IOException e) {
             throw new SortException("Network error: " + e.getClass().getSimpleName(), true, e);
         }
-        long latency = (System.nanoTime() - start) / 1_000_000;
         if (r.code / 100 != 2) {
             throw new SortException("HTTP " + r.code + ": " + JsonHttp.snippet(r.body),
                     SortException.isRetryableStatus(r.code), null);
         }
-        Result res = parse(r.body);
-        res.latencyMs = latency;
-        return res;
+        return r;
     }
 
     /** Parses an OpenAI-style chat completion. Package-private for tests. */

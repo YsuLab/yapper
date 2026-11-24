@@ -19,6 +19,10 @@ public final class SilenceDetector {
     static final double FLOOR_RATIO = 2.5;
     /** Samples during the first {@code CALIBRATION_MS} only seed the noise floor. */
     static final long CALIBRATION_MS = 300;
+    /** After this much speech, a capture counts as a ramble. */
+    static final long LONG_TALK_MS = 6_000;
+    /** Pause that ends a ramble-length quick capture. */
+    static final long LONG_TALK_SILENCE_MS = 4_000;
 
     private final long silenceMs;
     private final long noSpeechMs;
@@ -71,13 +75,21 @@ public final class SilenceDetector {
         if (elapsed >= maxMs) {
             return Decision.STOP_MAX;
         }
-        if (speechStarted && nowMs - lastSpeechMs >= silenceMs) {
+        if (speechStarted && nowMs - lastSpeechMs >= effectiveSilenceMs()) {
             return Decision.STOP_SILENCE;
         }
         if (!speechStarted && elapsed >= noSpeechMs) {
             return Decision.STOP_NO_SPEECH;
         }
         return Decision.CONTINUE;
+    }
+
+    /**
+     * Once he has talked for a while, he is rambling and pauses to think: allow a longer pause before
+     * stopping, so the second half of a ramble is not cut off. Short captures keep the quick stop.
+     */
+    long effectiveSilenceMs() {
+        return speechMsTotal >= LONG_TALK_MS ? Math.max(silenceMs, LONG_TALK_SILENCE_MS) : silenceMs;
     }
 
     public int threshold() {

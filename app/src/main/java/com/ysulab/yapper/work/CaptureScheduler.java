@@ -135,6 +135,45 @@ public final class CaptureScheduler {
         }
     }
 
+    /** Today board: send (or, after Undo, remove) one capture's tasks on the hub. Waits for a network. */
+    public static void enqueueHub(Context context, String id) {
+        OneTimeWorkRequest req = new OneTimeWorkRequest.Builder(HubWorker.class)
+                .setInputData(new Data.Builder().putString(KEY_ID, id).build())
+                .setConstraints(new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .addTag("capture")
+                .build();
+        WorkManager.getInstance(context).enqueueUniqueWork("hub-" + id, ExistingWorkPolicy.APPEND_OR_REPLACE, req);
+    }
+
+    /** Decision 6: send the vault's open "- [ ]" tasks to the board once (button in settings). */
+    public static void enqueueVaultImport(Context context) {
+        OneTimeWorkRequest req = new OneTimeWorkRequest.Builder(ImportWorker.class)
+                .setConstraints(new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build();
+        WorkManager.getInstance(context).enqueueUniqueWork("vault-import", ExistingWorkPolicy.KEEP, req);
+    }
+
+    /** Decision 5: every night about 23:30 Riyadh, the board's done tasks go into the daily note. */
+    public static void scheduleDoneLog(Context context) {
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of(Settings.ZONE));
+        java.time.ZonedDateTime next = now.withHour(23).withMinute(30).withSecond(0).withNano(0);
+        if (!next.isAfter(now)) {
+            next = next.plusDays(1);
+        }
+        androidx.work.PeriodicWorkRequest req = new androidx.work.PeriodicWorkRequest.Builder(
+                DoneWorker.class, 24, TimeUnit.HOURS)
+                .setInitialDelay(java.time.Duration.between(now, next).toMillis(), TimeUnit.MILLISECONDS)
+                .setConstraints(new Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .build();
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("done-log",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP, req);
+    }
+
     public static void enqueueUndo(Context context, String id) {
         OneTimeWorkRequest req = new OneTimeWorkRequest.Builder(UndoWorker.class)
                 .setInputData(new Data.Builder().putString(KEY_ID, id).build())
@@ -203,11 +242,17 @@ public final class CaptureScheduler {
                         }
                     }
                 }
+                if (HubWorker.pending(store, id)) {
+                    enqueueHub(context, id);
+                }
             } catch (Exception e) {
                 // One broken bundle must not block the others.
             }
         }
         restoreReminders(context);
+        if (new Settings(context).hasHubToken()) {
+            scheduleDoneLog(context);
+        }
     }
 
     /** Sorter outcomes for the status screen: done, shadow, failed, undone. */

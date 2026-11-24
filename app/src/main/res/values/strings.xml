@@ -70,6 +70,14 @@
     <string name="sorter_move">Move sorted captures out of Inbox/ into _yapper/captures/</string>
     <string name="sorter_screens">Send the screenshot when there is little screen text</string>
     <string name="st_sorter">Sorter</string>
+    <string name="section_hub">Today board (task hub)</string>
+    <string name="hub_help">Tasks you say go to your hub and show on the Today board on the tablet. Notes still go to the vault. Paste this phone\'s token from the hub\'s .env (the phone= value). With no connection, tasks wait on the phone and go out later.</string>
+    <string name="hint_hub_url">Hub URL (default https://board.yasiraloufi.dev)</string>
+    <string name="hint_hub_token">Phone token</string>
+    <string name="hint_hub_token_saved">Phone token (saved, leave empty to keep)</string>
+    <string name="btn_hub_test">Test the hub</string>
+    <string name="btn_hub_import">Send open vault tasks to the board (once)</string>
+    <string name="st_hub">Today board</string>
     <string name="st_sorter_off">add an OpenRouter key</string>
     <string name="btn_save">Save</string>
     <string name="btn_retry">Retry unfinished captures</string>

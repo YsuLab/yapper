@@ -51,6 +51,9 @@ public final class SorterPrompt {
         sb.append("## Transcript\n");
         String t = in.transcript == null ? "" : in.transcript.trim();
         sb.append(t.isEmpty() ? "(no speech)" : cap(t, MAX_TRANSCRIPT)).append("\n\n");
+        if (in.items != null && !in.items.isEmpty()) {
+            sb.append(Splitter.itemsSection(in.items));
+        }
         if (!in.sourceApp.isEmpty() || !in.sourceUrl.isEmpty()) {
             sb.append("## Screen source\n");
             if (!in.sourceApp.isEmpty()) sb.append("App: ").append(in.sourceApp).append('\n');
@@ -113,7 +116,7 @@ public final class SorterPrompt {
         return new JSONObject()
                 .put("model", cfg.modelId())
                 .put("messages", messages)
-                .put("tools", new JSONArray(toolsJson))
+                .put("tools", tools(toolsJson, in.items != null && !in.items.isEmpty()))
                 // "auto", not "required": Claude models with extended thinking reject forced tool use
                 // (OpenRouter maps "required" to Anthropic's "any"). The prompt says "tool calls only",
                 // and a text-only answer becomes an ask_owner question (Sorter.parse).
@@ -122,17 +125,39 @@ public final class SorterPrompt {
                 .put("max_tokens", 16000);
     }
 
+    /** The tools; with split items, each tool also takes {@code item}: the item number it files. */
+    static JSONArray tools(String toolsJson, boolean withItem) throws JSONException {
+        JSONArray tools = new JSONArray(toolsJson);
+        if (!withItem) {
+            return tools;
+        }
+        for (int i = 0; i < tools.length(); i++) {
+            JSONObject params = tools.getJSONObject(i).getJSONObject("function").optJSONObject("parameters");
+            if (params == null) {
+                continue;
+            }
+            JSONObject props = params.optJSONObject("properties");
+            if (props == null) {
+                props = new JSONObject();
+                params.put("properties", props);
+            }
+            props.put("item", new JSONObject().put("type", "integer")
+                    .put("description", "Number of the item (from the capture's item list) this call files"));
+        }
+        return tools;
+    }
+
     static String modeNote(String mode) {
         if (mode == null) return "";
         switch (mode) {
             case "plan":
                 return "Morning plan. He is planning the day: call plan_day once with time blocks for the "
-                        + "day he means (default today), in order. Tasks without a time go in the plan's notes "
-                        + "as \"- [ ] \" lines. Other items he mentions are sorted as usual.";
+                        + "day he means (default today), in order. Tasks without a time → add_task. Other items "
+                        + "he mentions are sorted as usual.";
             case "debrief":
                 return "Evening debrief. For each thing he says he finished, call complete_task. Unfinished "
-                        + "things he wants to keep → add_to_daily for tomorrow, section \"Rolled over\", as "
-                        + "\"- [ ] \" lines. Reflections → add_to_daily for today, section \"Debrief\".";
+                        + "tasks stay on his board by themselves. New tasks → add_task. Reflections → "
+                        + "add_to_daily for today, section \"Debrief\".";
             case "share":
                 return "Shared from another app (often WhatsApp): text, images (timetables, schedules, "
                         + "screenshots) or files. The shared content is the material; the transcript, if any, is "

@@ -28,8 +28,20 @@ public final class Summary {
         int done = 0;
         Set<String> linked = new LinkedHashSet<>();
         boolean review = false;
+        int tasks = 0;
+        int unsorted = 0;
         for (SortAction a : plan) {
             switch (a.tool) {
+                case SortAction.TASK:
+                    if (a.unsure) {
+                        unsorted++;
+                    } else {
+                        tasks++;
+                    }
+                    break;
+                case SortAction.UNSORTED:
+                    unsorted++;
+                    break;
                 case SortAction.APPEND:
                 case SortAction.CREATE:
                     notes.add(a.path);
@@ -65,6 +77,12 @@ public final class Summary {
         List<String> parts = new ArrayList<>();
         if (review) {
             parts.add("Weekly review saved");
+        }
+        if (tasks > 0) {
+            parts.add(plural(tasks, "task") + " → board");
+        }
+        if (unsorted > 0) {
+            parts.add(unsorted + " unsorted");
         }
         if (blocks > 0) {
             parts.add("Plan: " + plural(blocks, "block"));
@@ -223,6 +241,11 @@ public final class Summary {
                 return "Weekly review in " + (a.path.isEmpty() ? "Weekly/" : link(a.path));
             case SortAction.ASK_VAULT:
                 return "Asked the vault: " + oneLine(a.question);
+            case SortAction.TASK:
+                return (a.unsure ? "Unsorted (board): " : "Task (board): ") + oneLine(a.title)
+                        + (a.remindAt.isEmpty() ? "" : " · due " + a.remindAt);
+            case SortAction.UNSORTED:
+                return "Unsorted (board): " + oneLine(a.title.isEmpty() ? a.quote : a.title);
             case SortAction.ENTITY:
                 return "Linked " + link(a.path) + (a.markdown.isEmpty() ? "" : ": " + oneLine(a.markdown));
             default:

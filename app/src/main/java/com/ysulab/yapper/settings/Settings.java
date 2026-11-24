@@ -158,6 +158,29 @@ public final class Settings {
         return c;
     }
 
+    /** Task hub (Today board): base URL, default https://board.yasiraloufi.dev. */
+    public String hubUrl() {
+        return prefs.getString("hub_url", com.ysulab.yapper.hub.HubClient.DEFAULT_URL);
+    }
+
+    public boolean hasHubToken() {
+        return !secrets.get("hub_token").isEmpty();
+    }
+
+    /** Saves hub settings. A null token leaves the stored one unchanged; "" clears it. */
+    public void saveHub(String url, String newTokenOrNull) {
+        String u = url == null ? "" : url.trim();
+        prefs.edit().putString("hub_url", u.isEmpty() ? com.ysulab.yapper.hub.HubClient.DEFAULT_URL : u).apply();
+        if (newTokenOrNull != null) {
+            secrets.put("hub_token", newTokenOrNull.trim());
+        }
+    }
+
+    /** This phone's hub client (its own token, so it can be revoked alone). */
+    public com.ysulab.yapper.hub.HubClient hub() {
+        return new com.ysulab.yapper.hub.HubClient(hubUrl(), secrets.get("hub_token"));
+    }
+
     /** True when the sorter has its own key (not borrowed from the OpenRouter transcriber). */
     public boolean hasOwnSorterKey() {
         return !secrets.get("sorter_key").isEmpty();

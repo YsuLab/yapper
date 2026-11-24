@@ -117,7 +117,12 @@ def same_instant(a, b):
 
 
 def matches(act, exp):
-    if "tool" in exp and act.get("tool") != exp["tool"]:
+    tool = act.get("tool")
+    if exp.get("tool") == "create_reminder" and tool == "add_task" and act.get("due"):
+        # A task with a time is add_task with due now; the app sets the alarm from it.
+        act = dict(act, tool="create_reminder", remind_at=act["due"])
+        tool = "create_reminder"
+    if "tool" in exp and tool != exp["tool"]:
         return False
     if "path" in exp and norm_path(act.get("path")) != exp["path"]:
         return False

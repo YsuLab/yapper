@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0908">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Yasir's Today board: five tasks at a time and one drawing page per day.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Today board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500&family=Shippori+Mincho+B1:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Urushi, dark only. Layout: a lacquer desk board in two halves.
+   Left is the day (clock, five tasks, capture). Right is one drawing page per day.
+   One red idea: the task to do now. Gold appears only where something is mended. */
+:root{
+  color-scheme:dark;
+  --background:#0c0908;
+  --card:#14110f;
+  --card-raised:#1d1817;
+  --border:#2f2926;
+  --edge:#7b726f;
+  --foreground:#f4f0e9;
+  --muted-foreground:#b1a9a3;
+  --primary:#890810;
+  --primary-line:#c83a36;
+  --primary-text:#e66359;
+  --primary-tint:#360d0b;
+  --gold:#dcb469;
+  --success:#82c29d;
+  --info:#87afd9;
+  --radius-sm:6px;
+  --radius-md:8px;
+  --radius-lg:10px;
+  --space-block:18px;
+  --space-cols:26px;
+  --font-serif:"Shippori Mincho B1", Georgia, serif;
+  --font-sans:"IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, monospace;
+}
+[hidden]{display:none !important}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--background);color:var(--foreground);
+  font:400 16px/1.5 var(--font-sans);
+  overflow:hidden;
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+svg.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+#stage{
+  height:100%;padding:28px;
+  display:grid;grid-template-columns:minmax(330px,5fr) 7fr;gap:var(--space-cols);
+  transition:transform 3s ease, opacity 1.2s ease;
+}
+
+/* ---------- the day ---------- */
+.day{display:flex;flex-direction:column;gap:var(--space-block);min-height:0;min-width:0}
+.clock{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.time{font:800 clamp(64px,8.4vw,116px)/0.92 var(--font-serif);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.dates{display:flex;flex-direction:column;gap:2px;padding-bottom:6px}
+.date{font:500 19px/26px var(--font-sans)}
+.date-ja{font:700 15px/22px var(--font-serif);color:var(--muted-foreground)}
+
+.progress{display:flex;align-items:center;gap:12px;min-height:20px;font:400 14px/20px var(--font-sans);color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.ticks{display:flex;gap:4px;flex-wrap:wrap}
+.ticks i{width:16px;height:3px;border-radius:2px;background:var(--border)}
+.ticks i.on{background:var(--gold)}
+
+.list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.task{
+  position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 40px;align-items:center;gap:4px;
+  padding:9px 4px;border-bottom:1px solid var(--border);touch-action:pan-y;
+}
+.task.now{
+  background:var(--primary-tint);border:1.5px solid var(--primary-line);border-radius:var(--radius-lg);
+  padding:12px 6px;margin-bottom:4px;
+}
+.kicker{display:block;font:500 13px/18px var(--font-sans);color:var(--primary-text)}
+.text{font:500 21px/29px var(--font-sans);overflow-wrap:anywhere}
+.inkmark{display:block;height:44px;max-width:100%;color:var(--foreground)}
+.inkmark polyline{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.task.done{padding:3px 4px}
+.task.done .text{font-size:17px;line-height:24px}
+.task.done .inkmark{height:34px}
+.task.done .text,.task.done .inkmark{color:var(--muted-foreground)}
+.what{min-width:0;justify-self:start;max-width:100%}
+.check,.remove{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;border-radius:var(--radius-md)}
+.check{color:var(--edge)}
+.check .ring{width:22px;height:22px;border:1.5px solid currentColor;border-radius:50%}
+.task.now .check{color:var(--primary-line)}
+.task.done .check{color:var(--gold)}
+.remove{width:40px;color:var(--edge);opacity:.7}
+.remove svg.icon{width:16px;height:16px}
+.seam{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.seam path{fill:none;stroke:var(--gold);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.task.fresh .seam{animation:mend .5s ease-out both}
+@keyframes mend{from{clip-path:inset(-20% 100% -20% 0)}to{clip-path:inset(-20% 0 -20% 0)}}
+
+.more{align-self:flex-start;border:0;background:none;padding:10px 6px;font:400 14px/20px var(--font-sans);color:var(--muted-foreground);text-decoration:underline;text-underline-offset:3px;min-height:44px}
+.note{display:flex;flex-direction:column;gap:8px;padding:6px 4px}
+.note h2{margin:0;font:700 24px/1.25 var(--font-serif);text-wrap:balance}
+.note p{margin:0;font:400 16px/24px var(--font-sans);color:var(--muted-foreground);max-width:46ch}
+.note .rule{width:48px;height:2px;background:var(--gold)}
+.note .sealed{display:flex;align-items:center;gap:10px}
+.mark{width:22px;height:22px;flex:none}
+
+/* ---------- capture ---------- */
+.capture{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.field{flex:1 1 220px;display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding-left:14px;min-width:0}
+.field:focus-within{border-color:var(--edge)}
+.field input{flex:1;min-width:0;height:50px;border:0;background:none;color:var(--foreground);font:400 18px/24px var(--font-sans);-webkit-user-select:text;user-select:text;outline:none}
+.field input::placeholder{color:var(--muted-foreground)}
+.field input.provisional{color:var(--muted-foreground)}
+.btn{display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);font:500 16px/20px var(--font-sans)}
+.btn.on{border-color:var(--primary-line);color:var(--primary-text)}
+.btn.solid{background:var(--card-raised);border-color:var(--edge)}
+.icon-btn{width:50px;height:50px;border:0;background:none;display:grid;place-items:center;color:var(--muted-foreground);border-radius:var(--radius-md)}
+.slip{display:flex;flex-direction:column;gap:10px}
+.slip canvas{width:100%;height:132px;background:var(--card);border:1px solid var(--edge);border-radius:var(--radius-lg);touch-action:none;display:block}
+.slip-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.slip-actions .caption{flex:1 1 180px}
+.caption,.status{font:400 13.5px/19px var(--font-sans);color:var(--muted-foreground);margin:0}
+.status:empty{display:none}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.credit{display:inline-flex;align-items:center;gap:8px;font:400 13px/18px var(--font-sans);color:var(--muted-foreground)}
+.credit .mark{width:20px;height:20px}
+.foot-tools{display:flex;gap:4px}
+.foot-tools button{width:44px;height:44px;border:0;background:none;color:var(--edge);display:grid;place-items:center;border-radius:var(--radius-md)}
+
+/* ---------- the page ---------- */
+.page{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border)}
+.page-nav{display:flex;align-items:center;gap:2px;min-width:0}
+.page-nav h2{margin:0 6px;font:700 21px/1.25 var(--font-serif)}
+.tool{width:44px;height:44px;display:grid;place-items:center;background:none;border:1px solid transparent;border-radius:var(--radius-md);color:var(--muted-foreground)}
+.tool:disabled{opacity:.3;cursor:default}
+.tool[aria-pressed="true"],.tool[aria-checked="true"]{background:var(--card-raised);border-color:var(--edge);color:var(--foreground)}
+.tools{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.tools .sep{width:1px;height:24px;background:var(--border);margin:0 6px}
+.swatch{width:20px;height:20px;border-radius:50%;background:var(--c)}
+.nib{border-radius:50%;background:currentColor;width:var(--d);height:var(--d)}
+.surface{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+#ink{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:crosshair}
+.hint{position:absolute;left:24px;bottom:20px;right:24px;margin:0;font:400 15px/22px var(--font-sans);color:var(--edge);pointer-events:none;max-width:44ch}
+.nib-ring{position:absolute;border:1px solid var(--edge);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
+.ask{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card-raised);border:1px solid var(--edge);border-radius:var(--radius-lg);padding:10px 12px;font:500 15px/20px var(--font-sans)}
+.ask .btn{height:44px}
+.page-note{position:absolute;left:24px;top:14px;margin:0;pointer-events:none}
+
+/* ---------- rest and sleep (burn-in care) ---------- */
+body.rest .capture,body.rest .tools,body.rest .foot-tools,body.rest .remove,body.rest .hint{opacity:.28;transition:opacity 1.2s ease}
+body.rest .time,body.rest .text,body.rest .date{color:var(--muted-foreground);transition:color 1.2s ease}
+#sleep{position:fixed;inset:0;background:#000;z-index:20}
+#sleep .sleep-time{position:absolute;font:700 44px/1 var(--font-serif);color:#5c5552;font-variant-numeric:tabular-nums;transition:top 4s ease,left 4s ease}
+#sleep .sleep-hint{position:absolute;left:0;right:0;bottom:24px;text-align:center;font:400 13px/18px var(--font-sans);color:#3d3836}
+#dust{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+/* ---------- unsorted: items Yapper was not sure about ---------- */
+.unsorted{display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px}
+.unsorted h3{margin:0;font:500 12.5px/18px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground)}
+.unsorted ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:32vh;overflow-y:auto}
+.u-item{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border)}
+.u-item:first-child{border-top:0}
+.u-what{flex:1 1 220px;min-width:0;display:flex;flex-direction:column}
+.u-text{font:500 17px/24px var(--font-sans);overflow-wrap:anywhere}
+.u-quote{font:400 13.5px/19px var(--font-sans);color:var(--muted-foreground);overflow-wrap:anywhere}
+.u-actions{display:flex;gap:8px}
+.u-actions .btn{height:44px;padding:0 14px;font-size:15px}
+.btn.quiet{background:none}
+.due{display:block;font:400 13px/18px var(--font-mono);color:var(--muted-foreground)}
+body.rest .unsorted{opacity:.5;transition:opacity 1.2s ease}
+
+/* ---------- gate: first run asks for this device's token ---------- */
+#gate{position:fixed;inset:0;z-index:30;background:var(--background);display:grid;place-items:center;padding:16px;overflow:auto}
+.gate-card{width:100%;max-width:440px;display:flex;flex-direction:column;gap:14px}
+.gate-card h2{margin:0;font:800 34px/1.15 var(--font-serif)}
+.gate-card p{margin:0;color:var(--muted-foreground)}
+.gate-card .mark{width:40px;height:40px}
+.gate-card input{-webkit-user-select:text;user-select:text}
+
+@media (max-width:820px), (orientation:portrait) and (max-width:1000px){
+  body{overflow:auto}
+  html,body{height:auto;min-height:100%}
+  #stage{height:auto;grid-template-columns:minmax(0,1fr);padding:16px}
+  .list{overflow:visible;flex:none}
+  .page{height:72vh;min-height:440px}
+  .time{font-size:clamp(56px,17vw,96px)}
+}
+@media (prefers-reduced-motion:reduce){
+  #stage,.task.fresh .seam,#sleep .sleep-time,body.rest *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <section class="day" aria-label="Today">
+    <header class="clock">
+      <div class="time" id="time">00:00</div>
+      <div class="dates">
+        <div class="date" id="date"></div>
+        <div class="date-ja" id="dateJa" lang="ja"></div>
+      </div>
+    </header>
+
+    <div class="progress" id="progress" hidden>
+      <span id="count"></span>
+      <span class="ticks" id="ticks" aria-hidden="true"></span>
+    </div>
+
+    <div class="note" id="note" hidden></div>
+
+    <section class="unsorted" id="unsorted" aria-labelledby="unsortedHead" hidden>
+      <h3 id="unsortedHead">Unsorted</h3>
+      <ul id="unsortedList"></ul>
+    </section>
+
+    <div class="list" id="list">
+      <ol class="tasks" id="tasks"></ol>
+      <button type="button" class="more" id="more" hidden></button>
+    </div>
+
+    <form class="capture" id="capture" autocomplete="off">
+      <div class="field">
+        <input id="taskInput" type="text" placeholder="Add a task" enterkeyhint="done" dir="auto" maxlength="400" aria-label="Add a task">
+        <button type="submit" class="icon-btn" id="addBtn" aria-label="Add task"></button>
+      </div>
+      <button type="button" class="btn" id="writeBtn"><span data-icon="pen"></span><span>Write</span></button>
+    </form>
+
+    <div class="slip" id="slip" hidden>
+      <canvas id="slipCanvas" aria-label="Handwriting slip"></canvas>
+      <div class="slip-actions">
+        <p class="caption">Write the task here. It stays in your handwriting.</p>
+        <button type="button" class="btn" id="slipCancel">Cancel</button>
+        <button type="button" class="btn solid" id="slipAdd">Add to today</button>
+      </div>
+    </div>
+
+    <p class="status" id="status" role="status"></p>
+
+    <footer class="foot">
+      <span class="credit"><span data-mark></span>Yasir Aloufi</span>
+      <span class="foot-tools">
+        <button type="button" id="soundBtn" aria-pressed="true" aria-label="Sound"></button>
+        <button type="button" id="restBtn" aria-label="Rest the screen now"></button>
+        <button type="button" id="fullBtn" aria-label="Full screen"></button>
+      </span>
+    </footer>
+  </section>
+
+  <section class="page" aria-label="Drawing page">
+    <div class="page-head">
+      <div class="page-nav">
+        <button type="button" class="tool" id="prevDay" aria-label="Earlier page"></button>
+        <h2 id="pageTitle">Today's page</h2>
+        <button type="button" class="tool" id="nextDay" aria-label="Later page"></button>
+      </div>
+      <div class="tools" id="tools">
+        <span role="radiogroup" aria-label="Ink" id="inks" style="display:contents"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <span role="radiogroup" aria-label="Nib size" id="nibs" style="display:contents"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="tool" id="eraserBtn" aria-pressed="false" aria-label="Eraser"></button>
+        <button type="button" class="tool" id="undoBtn" aria-label="Undo" disabled></button>
+        <button type="button" class="tool" id="clearBtn" aria-label="Clear page"></button>
+        <button type="button" class="tool" id="saveBtn" aria-label="Save page as image"></button>
+      </div>
+    </div>
+    <div class="surface" id="surface">
+      <canvas id="ink" aria-label="Drawing surface"></canvas>
+      <p class="caption page-note" id="pageNote"></p>
+      <p class="hint" id="hint">This page is yours. Sketch, plan or write. Hold the S Pen button to erase.</p>
+      <div class="nib-ring" id="nibRing" hidden></div>
+      <div class="ask" id="clearAsk" hidden>
+        <span>Clear this page?</span>
+        <button type="button" class="btn" id="clearNo">Keep it</button>
+        <button type="button" class="btn solid" id="clearYes">Clear it</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<canvas id="dust" aria-hidden="true"></canvas>
+<div id="gate" hidden>
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <span data-mark></span>
+    <h2>Connect this board</h2>
+    <p>Paste this device&rsquo;s token for the hub. It stays on this device, and you only do this once.</p>
+    <div class="field"><input id="gateToken" type="password" placeholder="Device token" aria-label="Device token" autocapitalize="off" spellcheck="false"></div>
+    <button type="submit" class="btn solid">Connect</button>
+    <p class="caption" id="gateMsg" role="status"></p>
+  </form>
+</div>
+<div id="sleep" hidden>
+  <div class="sleep-time" id="sleepTime">00:00</div>
+  <div class="sleep-hint">Touch to wake</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= helpers ================= */
+const $ = id => document.getElementById(id);
+const rootCss = getComputedStyle(document.documentElement);
+const tok = n => rootCss.getPropertyValue(n).trim();
+const INKS = ['--foreground', '--gold', '--primary-line', '--info'].map(tok);
+const INK_NAMES = ['Bone', 'Gold', 'Red', 'Blue'];
+const NIBS = [2.2, 4.6, 9];
+const NIB_NAMES = ['Fine', 'Medium', 'Broad'];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+const local = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  keys() { try { return Object.keys(localStorage); } catch (e) { return []; } }
+};
+
+const ICONS = {
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  left: '<path d="m15 18-6-6 6-6"/>',
+  right: '<path d="m9 18 6-6-6-6"/>',
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sound: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  mute: '<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>',
+  eraser: '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>'
+};
+function icon(name) {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('class', 'icon'); s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = ICONS[name] || '';
+  return s;
+}
+const MARK = '<svg class="mark" viewBox="0 0 1254 1254" aria-hidden="true"><g transform="translate(0,1254) scale(0.1,-0.1)"><path fill="#890810" d="M9185 12392 c-33 -16 -107 -65 -165 -108 -58 -44 -150 -111 -205 -149 -55 -38 -120 -85 -145 -105 -25 -20 -88 -66 -140 -101 -228 -156 -406 -282 -453 -323 -29 -24 -93 -69 -144 -100 -50 -31 -113 -73 -140 -94 -26 -21 -127 -92 -223 -158 -394 -272 -668 -413 -968 -500 -506 -146 -581 -175 -1007 -389 -929 -468 -1750 -995 -2534 -1626 -84 -68 -185 -149 -224 -179 -84 -65 -576 -520 -695 -642 -150 -156 -162 -234 -88 -573 25 -115 52 -241 60 -280 21 -101 74 -346 96 -445 75 -336 110 -532 110 -607 0 -90 22 -212 64 -353 41 -138 111 -430 126 -520 13 -82 87 -441 185 -895 15 -66 46 -217 70 -335 25 -118 52 -249 61 -290 8 -41 42 -205 75 -365 85 -411 104 -502 139 -660 17 -77 53 -248 80 -380 28 -132 59 -278 70 -325 11 -47 27 -123 35 -170 9 -47 25 -125 35 -175 11 -49 33 -155 49 -235 17 -80 42 -199 56 -265 15 -66 32 -154 40 -195 15 -80 102 -483 111 -513 44 -144 167 -110 434 123 36 31 90 77 121 101 31 24 141 114 245 199 298 243 334 272 419 336 44 33 129 93 188 133 59 40 124 93 143 117 20 23 59 56 87 73 29 16 115 77 191 134 77 58 173 126 215 152 42 25 144 91 226 145 283 187 940 560 986 560 5 0 32 21 61 48 54 48 87 71 213 144 91 54 141 68 243 68 119 0 344 79 474 167 24 16 59 36 78 43 19 8 127 61 240 118 113 57 237 117 276 132 116 46 473 237 694 370 52 32 131 77 175 100 44 24 96 55 115 69 19 14 54 38 77 53 82 53 478 389 710 604 310 287 550 534 574 589 31 69 36 201 15 385 -9 80 -24 210 -33 290 -9 80 -17 231 -18 335 -1 186 -2 193 -39 330 -21 77 -43 172 -51 210 -7 39 -26 142 -44 230 -17 88 -40 210 -51 270 -11 61 -31 173 -45 250 -15 77 -46 239 -69 360 -24 121 -52 263 -61 315 -9 52 -48 250 -85 440 -74 375 -77 391 -90 590 -9 138 -20 182 -84 335 -28 68 -82 314 -111 510 -3 22 -19 101 -36 175 -16 74 -42 209 -59 300 -59 322 -93 500 -177 920 -46 234 -88 443 -93 465 -5 22 -23 114 -40 205 -17 91 -35 183 -40 205 -5 22 -19 87 -30 145 -48 233 -117 286 -275 212z"/><path fill="#f4f0e9" d="M5491 9021 c-12 -12 -21 -27 -21 -35 0 -30 -42 -65 -102 -85 -39 -13 -76 -35 -99 -57 -50 -49 -155 -77 -255 -68 -121 11 -134 -10 -70 -111 40 -63 44 -158 10 -216 -12 -20 -27 -51 -33 -71 -6 -19 -23 -46 -36 -58 -14 -13 -25 -33 -25 -44 -1 -81 -85 -265 -135 -294 -33 -20 -35 -24 -35 -73 0 -64 -37 -129 -87 -153 -30 -14 -33 -19 -33 -62 0 -59 -38 -131 -92 -175 -22 -17 -47 -47 -54 -66 -23 -54 -112 -74 -149 -33 -14 15 -31 20 -70 20 -40 0 -61 6 -91 27 -31 21 -49 26 -91 24 -54 -2 -89 10 -110 38 -8 11 -36 18 -95 23 -45 3 -102 10 -125 14 -36 5 -43 4 -43 -10 0 -9 4 -16 8 -16 8 0 106 -74 157 -118 46 -40 116 -129 126 -162 6 -19 30 -53 55 -75 83 -76 81 -265 -4 -335 -22 -18 -35 -39 -39 -63 -6 -41 -2 -43 59 -27 30 9 50 6 115 -15 58 -18 100 -25 168 -25 88 -1 91 -1 165 -45 41 -25 100 -56 130 -71 78 -37 109 -61 124 -99 8 -19 27 -40 43 -49 15 -8 43 -33 61 -55 64 -78 76 -54 62 118 -20 237 -53 408 -91 479 -16 30 -29 65 -29 77 0 12 -5 36 -11 54 -25 71 28 215 111 306 16 17 54 71 86 120 31 50 78 111 103 136 55 55 154 192 176 245 8 20 32 52 53 69 20 18 77 91 126 163 49 72 125 168 169 213 79 81 80 82 68 113 -29 71 -44 135 -47 201 -14 303 -41 388 -103 326z M8422 8774 c-12 -8 -26 -33 -32 -54 -16 -59 -105 -157 -155 -171 -22 -6 -58 -19 -80 -29 -57 -27 -109 -30 -590 -31 -236 0 -513 -5 -615 -10 -102 -5 -248 -11 -326 -13 -160 -4 -169 -8 -274 -91 -36 -28 -84 -64 -107 -78 -49 -31 -56 -62 -23 -92 20 -18 21 -18 51 11 30 29 30 29 782 33 414 2 768 4 787 4 115 1 346 -16 356 -26 20 -21 37 -283 20 -309 -30 -48 -50 -157 -35 -200 10 -31 10 -43 1 -56 -33 -45 -56 -110 -54 -152 0 -25 -7 -72 -17 -105 -30 -97 -61 -231 -61 -262 0 -17 -8 -54 -18 -84 -10 -30 -24 -81 -31 -114 -6 -33 -17 -80 -23 -105 -6 -25 -14 -67 -18 -95 -4 -27 -12 -63 -19 -80 -7 -16 -10 -39 -7 -51 3 -12 -3 -48 -14 -79 -11 -32 -20 -68 -20 -79 -1 -12 -9 -46 -20 -76 -11 -30 -19 -74 -20 -98 0 -24 -5 -53 -11 -64 -12 -23 -29 -92 -55 -228 -9 -47 -24 -113 -35 -148 -10 -34 -19 -75 -19 -90 0 -15 -7 -37 -15 -49 -8 -11 -23 -66 -34 -121 -11 -55 -27 -114 -35 -131 -9 -16 -16 -47 -16 -67 0 -161 -104 -270 -202 -211 -118 71 -156 90 -226 116 -42 15 -115 33 -162 40 -47 6 -106 15 -132 20 -40 6 -52 4 -85 -16 -41 -25 -170 -25 -202 1 -24 19 -9 209 23 288 35 87 36 84 -51 92 -139 13 -222 54 -330 163 -51 51 -93 96 -93 101 0 5 -26 41 -57 80 -32 39 -85 120 -118 181 -75 139 -87 140 -98 16 -20 -208 -23 -579 -5 -646 20 -83 -17 -137 -105 -150 -159 -24 -271 -50 -304 -70 -32 -20 -40 -21 -78 -11 -37 10 -56 8 -141 -14 -55 -14 -136 -28 -181 -30 -45 -2 -94 -9 -108 -14 -138 -52 -161 41 -47 186 36 45 88 123 131 194 21 36 49 74 61 85 12 11 31 38 42 60 12 22 32 54 45 70 36 44 69 94 97 147 14 26 30 50 36 53 6 4 40 50 76 103 96 143 129 191 152 215 11 12 34 49 51 82 41 79 181 307 280 457 18 28 44 75 57 105 13 29 42 73 63 96 22 24 59 79 82 122 23 44 58 98 78 120 39 43 68 122 56 152 -12 28 -26 156 -33 300 -9 167 -12 170 -94 104 -117 -95 -133 -107 -190 -140 -66 -37 -166 -61 -293 -70 -90 -6 -90 -6 -87 -41 14 -163 -2 -276 -53 -365 -13 -22 -31 -65 -40 -95 -10 -30 -33 -85 -51 -122 -19 -37 -34 -78 -34 -90 0 -13 -6 -32 -13 -44 -38 -65 -94 -141 -114 -157 -17 -14 -23 -29 -23 -57 0 -21 -8 -58 -19 -82 -33 -78 -163 -342 -181 -368 -9 -14 -25 -47 -34 -75 -9 -27 -30 -68 -46 -89 -17 -22 -30 -45 -30 -52 0 -7 -10 -25 -23 -41 -13 -15 -45 -67 -71 -115 -25 -48 -57 -100 -69 -115 -13 -15 -54 -77 -93 -138 -38 -60 -90 -130 -115 -155 -35 -33 -53 -63 -71 -113 -33 -92 -47 -107 -104 -107 -48 0 -164 -94 -164 -133 0 -24 -46 -54 -103 -67 -38 -9 -62 -23 -90 -51 -21 -22 -44 -39 -53 -39 -24 0 -102 -79 -109 -110 -10 -47 13 -81 70 -100 73 -25 130 -53 224 -109 93 -56 120 -61 171 -30 46 28 287 134 325 143 17 4 91 32 166 62 76 30 143 54 150 54 8 0 34 10 59 21 25 12 122 48 215 81 227 81 308 111 382 142 35 14 71 26 80 26 10 0 63 17 118 36 167 59 168 59 227 -45 53 -94 191 -265 230 -286 15 -9 49 -41 76 -73 75 -89 203 -213 250 -244 23 -15 95 -81 160 -147 189 -191 222 -177 112 47 -272 551 -267 779 15 620 183 -103 212 -121 245 -152 19 -18 49 -41 65 -50 29 -17 77 -80 108 -142 9 -17 27 -38 41 -48 31 -20 96 -114 96 -138 0 -10 16 -35 35 -55 36 -38 52 -86 41 -126 -4 -16 2 -34 19 -57 18 -24 25 -47 25 -77 0 -41 25 -83 49 -83 4 0 73 31 152 69 80 37 156 72 169 76 14 4 39 18 56 31 17 13 52 27 78 30 37 6 52 14 74 42 51 65 137 147 190 181 28 19 52 38 52 41 0 4 25 38 55 75 80 97 77 101 -65 107 -178 7 -227 98 -177 328 9 41 23 107 32 147 8 39 20 84 25 99 6 14 22 79 36 143 13 64 31 139 39 166 8 28 26 97 39 155 72 309 109 460 121 500 7 25 16 61 19 80 7 40 15 76 46 210 27 119 50 220 84 380 15 69 34 148 41 175 8 28 24 93 35 145 134 601 173 693 320 768 102 52 94 45 86 76 -9 36 -61 93 -92 100 -42 11 -73 36 -100 82 -20 34 -35 46 -73 59 -27 8 -59 27 -72 41 -13 14 -49 45 -79 68 -96 73 -210 169 -210 177 0 20 -37 28 -58 13z"/></g></svg>';
+
+const pad2 = n => String(n).padStart(2, '0');
+function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function keyDate(k) { const p = String(k).split('-').map(Number); return new Date(p[0], (p[1] || 1) - 1, p[2] || 1); }
+function longDate(d) {
+  const wd = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()];
+  const mo = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getMonth()];
+  return wd + ' ' + d.getDate() + ' ' + mo;
+}
+function jaDate(d) { return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + '日月火水木金土'[d.getDay()] + '曜日'; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+let statusTimer = 0;
+function status(msg, sticky) {
+  $('status').textContent = msg || '';
+  clearTimeout(statusTimer);
+  if (msg && !sticky) statusTimer = setTimeout(() => { $('status').textContent = ''; }, 7000);
+}
+
+/* ================= static chrome ================= */
+document.querySelectorAll('[data-icon]').forEach(el => el.replaceWith(icon(el.getAttribute('data-icon'))));
+document.querySelectorAll('[data-mark]').forEach(el => { el.outerHTML = MARK; });
+$('addBtn').append(icon('plus'));
+$('prevDay').append(icon('left')); $('nextDay').append(icon('right'));
+$('eraserBtn').append(icon('eraser')); $('undoBtn').append(icon('undo'));
+$('clearBtn').append(icon('trash')); $('saveBtn').append(icon('download'));
+$('restBtn').append(icon('moon')); $('fullBtn').append(icon('full'));
+
+/* ================= clock ================= */
+let today = dayKey();
+function tickClock() {
+  const now = new Date();
+  const t = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  if ($('time').textContent !== t) { $('time').textContent = t; $('sleepTime').textContent = t; }
+  const k = dayKey(now);
+  if ($('date').dataset.k !== k) {
+    $('date').dataset.k = k;
+    $('date').textContent = longDate(now);
+    $('dateJa').textContent = jaDate(now);
+  }
+  if (k !== today) { const was = today; today = k; onNewDay(was); }
+}
+
+/* ================= sound ================= */
+let actx = null;
+let soundOn = local.get('board.sound', true) !== false;
+function paintSound() {
+  const b = $('soundBtn'); b.textContent = ''; b.append(icon(soundOn ? 'sound' : 'mute'));
+  b.setAttribute('aria-pressed', String(soundOn));
+  b.setAttribute('aria-label', soundOn ? 'Sound is on' : 'Sound is off');
+}
+function tock(freq, gain) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    o.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain || 0.2, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + 0.18);
+  } catch (e) { /* no audio here */ }
+}
+$('soundBtn').addEventListener('click', () => { soundOn = !soundOn; local.set('board.sound', soundOn); paintSound(); if (soundOn) tock(540); });
+paintSound();
+
+/* ================= gold dust ================= */
+const dust = $('dust'), dctx = dust.getContext('2d');
+let flecks = [], dustRaf = 0;
+function sizeDust() { dust.width = innerWidth; dust.height = innerHeight; }
+function sprinkle(points) {
+  if (reduceMotion || !points.length) return;
+  sizeDust();
+  for (let i = 0; i < 46; i++) {
+    const p = points[Math.floor(Math.random() * points.length)];
+    flecks.push({ x: p[0] + (Math.random() - 0.5) * 10, y: p[1] + (Math.random() - 0.5) * 6, vx: (Math.random() - 0.5) * 0.9, vy: -0.6 + Math.random() * 0.5, s: 1 + Math.random() * 1.6, life: 0, max: 40 + Math.random() * 30 });
+  }
+  if (!dustRaf) dustRaf = requestAnimationFrame(stepDust);
+}
+function stepDust() {
+  dctx.clearRect(0, 0, dust.width, dust.height);
+  dctx.fillStyle = INKS[1];
+  flecks = flecks.filter(f => f.life < f.max);
+  for (const f of flecks) {
+    f.life++; f.vy += 0.045; f.x += f.vx; f.y += f.vy;
+    dctx.globalAlpha = 1 - f.life / f.max;
+    dctx.fillRect(f.x, f.y, f.s, f.s);
+  }
+  dctx.globalAlpha = 1;
+  dustRaf = flecks.length ? requestAnimationFrame(stepDust) : 0;
+}
+
+/* ================= hub: token, calls, outbox ================= */
+// The board talks to the hub on its own origin. Each device has its own token, kept on this device.
+// Writes go through an outbox kept in localStorage, so a change made offline is sent when the hub is back.
+const TOKEN_KEY = 'board.token', OUTBOX_KEY = 'board.outbox', CACHE_KEY = 'board.tasks.cache';
+const POLL_MS = 15000;
+let token = local.get(TOKEN_KEY, '') || '';
+(function takeTokenFromLink() {
+  // One-time setup link: https://board.example/#t=TOKEN. The token leaves the address bar at once.
+  const m = location.hash.match(/[#&]t=([A-Za-z0-9._~-]{24,})/);
+  if (m) { token = m[1]; local.set(TOKEN_KEY, token); window.history.replaceState(null, '', location.pathname + location.search); }
+})();
+
+function Unauthorized() { this.code = 401; }
+function api(method, path, body) {
+  const opt = { method, headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' };
+  if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  return fetch(path, opt).then(r => {
+    if (r.status === 401) throw new Unauthorized();
+    const ct = r.headers.get('content-type') || '';
+    return (ct.indexOf('json') >= 0 ? r.json().catch(() => null) : Promise.resolve(null)).then(j => ({ status: r.status, json: j }));
+  });
+}
+
+let outbox = local.get(OUTBOX_KEY, []) || [];
+let flushing = false, flushTimer = 0;
+function saveOutbox() { local.set(OUTBOX_KEY, outbox); }
+function enqueue(op) {
+  // A newer save of the same page replaces the waiting one; everything else keeps its order.
+  if (op.k) outbox = outbox.filter(o => o.k !== op.k);
+  outbox.push(op); saveOutbox(); flush();
+}
+function flush() {
+  if (flushing || !outbox.length || !token) return;
+  flushing = true; clearTimeout(flushTimer);
+  const op = outbox[0];
+  api(op.m, op.p, op.b).then(res => {
+    flushing = false;
+    if (res.status >= 500) throw new Error('hub ' + res.status);
+    outbox = outbox.filter(o => o !== op); saveOutbox();
+    if (res.status === 409 && op.k && res.json) onStalePage(res.json);
+    else if (res.status >= 400 && res.status !== 404) status('The hub refused a change (' + res.status + '). It was dropped.');
+    if (outbox.length) flush(); else { setOnline(true); refresh(); }
+  }).catch(err => {
+    flushing = false;
+    if (err instanceof Unauthorized) { showGate('This board’s token was refused. Paste a new one.'); return; }
+    setOnline(false);
+    flushTimer = setTimeout(flush, 10000);
+  });
+}
+
+let online = true;
+function setOnline(on) {
+  if (online === on) return;
+  online = on;
+  if (on) status('Back in touch with the hub.');
+  else status('The hub is out of reach. Changes are kept here and sent when it is back.', true);
+}
+
+/* ================= tasks: data ================= */
+let tasks = [];
+let mode = null;            // 'hub' once a token is set
+let loaded = false, slow = false, dead = false;
+let showAll = false;
+let fresh = null;           // id of the task just mended in this view
+let gestureActive = false, pendingRender = false;
+
+function validInk(k) {
+  if (!k || typeof k !== 'object' || !Array.isArray(k.s)) return null;
+  const w = Number(k.w), h = Number(k.h);
+  if (!(w > 0) || !(h > 0)) return null;
+  const s = k.s.filter(Array.isArray).slice(0, 80).map(a => a.filter(Number.isFinite).slice(0, 1200)).filter(a => a.length >= 2);
+  return s.length ? { w, h, s } : null;
+}
+function clean(b) {
+  b = b || {};
+  return {
+    id: String(b.id),
+    text: typeof b.text === 'string' ? b.text.slice(0, 2000) : '',
+    ink: validInk(b.ink),
+    done: b.status === 'done',
+    unsorted: b.status === 'unsorted',
+    doneDay: typeof b.doneDay === 'string' ? b.doneDay : null,
+    seam: Array.isArray(b.seam) ? b.seam.filter(Number.isFinite).slice(0, 64) : null,
+    order: Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER,
+    src: typeof b.src === 'string' ? b.src : '',
+    due: typeof b.due === 'string' ? b.due : null,
+    quote: typeof b.quote === 'string' ? b.quote : ''
+  };
+}
+function cacheTasks() {
+  local.set(CACHE_KEY, tasks.map(t => ({ id: t.id, text: t.text, ink: t.ink, status: t.done ? 'done' : (t.unsorted ? 'unsorted' : 'open'),
+    doneDay: t.doneDay, seam: t.seam, order: t.order, src: t.src, due: t.due, quote: t.quote })));
+}
+function changed() { cacheTasks(); render(); }
+
+function patch(id, fields) {
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  Object.assign(t, fields);
+  const b = {};
+  if ('done' in fields) b.status = fields.done ? 'done' : 'open';
+  if ('unsorted' in fields && !fields.unsorted) b.status = 'open';
+  if ('doneDay' in fields) b.doneDay = fields.doneDay;
+  if ('seam' in fields) b.seam = fields.seam;
+  if ('text' in fields) b.text = fields.text;
+  changed();
+  enqueue({ m: 'PATCH', p: '/api/tasks/' + encodeURIComponent(id), b });
+}
+function addTask(fields) {
+  if (!mode) return;
+  const id = 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const t = clean({ id, text: fields.text || '', ink: fields.ink, status: 'open', order: Date.now(), src: fields.src || 'type' });
+  if (!t.text && !t.ink) return;
+  tasks.push(t); changed();
+  const b = { id, text: t.text, src: t.src, order: t.order };
+  if (t.ink) b.ink = t.ink;
+  enqueue({ m: 'POST', p: '/api/tasks', b });
+}
+function removeTask(id) {
+  tasks = tasks.filter(t => t.id !== id); changed();
+  enqueue({ m: 'DELETE', p: '/api/tasks/' + encodeURIComponent(id) });
+}
+function promote(id) { patch(id, { unsorted: false }); }
+function complete(id, seam, dustPts, animate) {
+  fresh = animate ? id : null;
+  if (animate) setTimeout(() => { if (fresh === id) fresh = null; }, 1600);
+  const open = tasks.filter(t => !t.done && !t.unsorted && t.id !== id).length;
+  tock(open === 0 ? 392 : 540, open === 0 ? 0.26 : 0.2);
+  sprinkle(dustPts || []);
+  patch(id, { done: true, doneDay: today, seam });
+}
+function reopen(id) { patch(id, { done: false, doneDay: null, seam: null }); }
+
+/** Pulls today's tasks. Skipped while local changes wait in the outbox, so they never flicker back. */
+let refreshing = false;
+function refresh() {
+  if (!mode || refreshing) return;
+  if (outbox.length) { flush(); return; }
+  refreshing = true;
+  api('GET', '/api/tasks?view=today').then(res => {
+    refreshing = false;
+    if (res.status !== 200 || !res.json || !Array.isArray(res.json.tasks)) throw new Error('bad answer');
+    setOnline(true);
+    if (outbox.length) return; // a change was made while this was on its way
+    tasks = res.json.tasks.map(clean);
+    loaded = true; slow = false; dead = false;
+    changed();
+  }).catch(err => {
+    refreshing = false;
+    if (err instanceof Unauthorized) { showGate('This board’s token was refused. Paste a new one.'); return; }
+    setOnline(false);
+    if (!loaded) { slow = true; render(); }
+  });
+  pollPages();
+}
+
+/* ================= tasks: view ================= */
+function seamPath(seam) {
+  let d = '';
+  for (let i = 0; i + 1 < seam.length; i += 2) d += (i ? ' L' : 'M') + clamp(seam[i], -50, 1050) + ' ' + clamp(seam[i + 1], -200, 1200);
+  return d;
+}
+function inkSvg(k) {
+  const s = document.createElementNS(SVGNS, 'svg');
+  s.setAttribute('class', 'inkmark');
+  s.setAttribute('viewBox', '-3 -3 ' + (k.w + 6) + ' ' + (k.h + 6));
+  s.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+  s.setAttribute('role', 'img'); s.setAttribute('aria-label', 'Handwritten task');
+  const hPx = 44, wPx = clamp(hPx * (k.w + 6) / (k.h + 6), 30, 2000);
+  s.style.width = wPx + 'px';
+  const sw = Math.max(1, 2.4 * (k.h + 6) / hPx);
+  for (const a of k.s) {
+    const pl = document.createElementNS(SVGNS, 'polyline');
+    const pts = [];
+    for (let i = 0; i + 1 < a.length; i += 2) pts.push(a[i] + ',' + a[i + 1]);
+    if (pts.length === 1) pts.push(pts[0]);
+    pl.setAttribute('points', pts.join(' ')); pl.setAttribute('stroke-width', sw);
+    s.append(pl);
+  }
+  return s;
+}
+function label(t) { return t.text || 'handwritten task'; }
+
+function render() {
+  if (gestureActive) { pendingRender = true; return; }
+  const list = $('tasks'), note = $('note'), more = $('more');
+  const sorted = tasks.slice().sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1));
+  const open = sorted.filter(t => !t.done && !t.unsorted);
+  const doneToday = sorted.filter(t => t.done && t.doneDay === today);
+  const nowId = open.length ? open[0].id : null;
+  const allowed = new Set((showAll ? open : open.slice(0, 5)).map(t => t.id));
+  const rows = sorted.filter(t => (t.done ? t.doneDay === today : allowed.has(t.id)));
+
+  renderUnsorted(sorted.filter(t => t.unsorted));
+  list.textContent = '';
+  for (const t of rows) list.append(row(t, t.id === nowId));
+
+  const hiddenN = open.length - allowed.size;
+  more.hidden = !(hiddenN > 0 || (showAll && open.length > 5));
+  more.textContent = showAll ? 'Show five at a time' : (hiddenN === 1 ? '1 more is waiting' : hiddenN + ' more are waiting');
+
+  const total = open.length + doneToday.length;
+  $('progress').hidden = total === 0;
+  $('count').textContent = doneToday.length + ' of ' + total + ' mended';
+  const ticks = $('ticks'); ticks.textContent = '';
+  for (let i = 0; i < Math.min(total, 24); i++) { const el = document.createElement('i'); if (i < doneToday.length) el.className = 'on'; ticks.append(el); }
+
+  note.textContent = '';
+  let noteKind = '';
+  if (!loaded) noteKind = dead ? 'dead' : (slow ? 'slow' : 'loading');
+  else if (total === 0) noteKind = 'empty';
+  else if (open.length === 0) noteKind = 'mended';
+  note.hidden = !noteKind;
+  if (noteKind === 'loading') note.append(el('p', 'Fetching your tasks.'));
+  if (noteKind === 'slow') note.append(el('h2', 'Your tasks are out of reach.'), el('p', 'They will appear here when the connection returns.'));
+  if (noteKind === 'dead') note.append(el('h2', 'Your tasks could not be loaded.'), el('p', 'Reload the page to try again.'));
+  if (noteKind === 'empty') note.append(el('h2', 'Nothing on the board yet.'), el('p', 'Tell Yapper, write a task with the pen, or type it below.'));
+  if (noteKind === 'mended') {
+    const sealed = document.createElement('div'); sealed.className = 'sealed'; sealed.innerHTML = MARK;
+    sealed.append(el('h2', 'Today is mended.'));
+    const rule = document.createElement('div'); rule.className = 'rule';
+    note.append(rule, sealed, el('p', 'Everything on the board is done. The drawing page is still open.'));
+  }
+}
+function renderUnsorted(items) {
+  const box = $('unsorted'), ul = $('unsortedList');
+  box.hidden = items.length === 0; ul.textContent = '';
+  for (const t of items) {
+    const li = document.createElement('li'); li.className = 'u-item';
+    const what = document.createElement('div'); what.className = 'u-what';
+    const s = el('span', t.text || t.quote || 'Something from a capture'); s.className = 'u-text'; s.dir = 'auto'; what.append(s);
+    if (t.quote && t.quote !== t.text) { const q = el('span', '\u201c' + t.quote + '\u201d'); q.className = 'u-quote'; q.dir = 'auto'; what.append(q); }
+    const acts = document.createElement('div'); acts.className = 'u-actions';
+    const mk = el('button', 'Make it a task'); mk.type = 'button'; mk.className = 'btn';
+    mk.addEventListener('click', () => promote(t.id));
+    const dm = el('button', 'Dismiss'); dm.type = 'button'; dm.className = 'btn quiet';
+    dm.setAttribute('aria-label', 'Dismiss: ' + (t.text || t.quote || 'item'));
+    dm.addEventListener('click', () => removeTask(t.id));
+    acts.append(mk, dm); li.append(what, acts); ul.append(li);
+  }
+}
+const dueFmt = (() => { try { return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Riyadh' }); } catch (e) { return null; } })();
+function dueText(iso) { const d = new Date(iso); return isNaN(d) || !dueFmt ? '' : 'Due ' + dueFmt.format(d); }
+function el(tag, text) { const n = document.createElement(tag); n.textContent = text; return n; }
+
+function row(t, isNow) {
+  const li = document.createElement('li');
+  li.className = 'task' + (t.done ? ' done' : '') + (isNow ? ' now' : '') + (fresh === t.id ? ' fresh' : '');
+  li.dataset.id = t.id;
+
+  const check = document.createElement('button');
+  check.type = 'button'; check.className = 'check';
+  check.setAttribute('aria-label', (t.done ? 'Reopen: ' : 'Mark done: ') + label(t));
+  if (t.done) check.append(icon('check')); else { const ring = document.createElement('span'); ring.className = 'ring'; check.append(ring); }
+  check.addEventListener('click', () => {
+    if (t.done) { reopen(t.id); return; }
+    const made = tapSeam(li, t.id);
+    complete(t.id, made.seam, made.dust, true);
+  });
+
+  const what = document.createElement('div'); what.className = 'what';
+  if (isNow) what.append(Object.assign(document.createElement('span'), { className: 'kicker', textContent: 'Now' }));
+  if (t.ink) what.append(inkSvg(t.ink));
+  if (t.text) { const s = document.createElement('span'); s.className = 'text'; s.dir = 'auto'; s.textContent = t.text; what.append(s); }
+  if (t.due && !t.done) { const d = dueText(t.due); if (d) what.append(Object.assign(document.createElement('span'), { className: 'due', textContent: d })); }
+
+  const rm = document.createElement('button');
+  rm.type = 'button'; rm.className = 'remove'; rm.setAttribute('aria-label', 'Remove: ' + label(t));
+  rm.append(icon('x'));
+  rm.addEventListener('click', () => removeTask(t.id));
+
+  const seam = document.createElementNS(SVGNS, 'svg');
+  seam.setAttribute('class', 'seam'); seam.setAttribute('viewBox', '0 0 1000 1000'); seam.setAttribute('preserveAspectRatio', 'none'); seam.setAttribute('aria-hidden', 'true');
+  const set = document.createElementNS(SVGNS, 'path'); set.setAttribute('class', 'set');
+  if (t.done && t.seam && t.seam.length >= 4) set.setAttribute('d', seamPath(t.seam));
+  const live = document.createElementNS(SVGNS, 'path'); live.setAttribute('class', 'live');
+  seam.append(set, live);
+
+  li.append(check, what, rm, seam);
+  if (!t.done) bindStrike(li, t, live);
+  return li;
+}
+
+function norm(p, r) { return [Math.round((p[0] - r.left) / r.width * 1000), Math.round((p[1] - r.top) / r.height * 1000)]; }
+function tapSeam(li, id) {
+  const r = li.getBoundingClientRect();
+  const txt = li.querySelector('.text'), mark = li.querySelector('.inkmark');
+  const lines = txt ? txt.getClientRects() : null;
+  const w = (lines && lines.length) ? lines[0] : (mark || li.querySelector('.what')).getBoundingClientRect();
+  let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+  const x0 = w.left - 6, x1 = Math.min(r.right - 46, w.right + 14), y = w.top + w.height * 0.56;
+  const seam = [], dustPts = [];
+  for (let i = 0; i <= 5; i++) {
+    const p = [x0 + (x1 - x0) * i / 5, y + (rnd() - 0.5) * Math.min(12, w.height * 0.3)];
+    dustPts.push(p); seam.push.apply(seam, norm(p, r));
+  }
+  return { seam, dust: dustPts };
+}
+function bindStrike(li, t, live) {
+  let pts = null, pid = null, rect = null, going = false;
+  li.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    rect = li.getBoundingClientRect(); pts = [[e.clientX, e.clientY]]; pid = e.pointerId; going = false;
+  });
+  li.addEventListener('pointermove', e => {
+    if (!pts || e.pointerId !== pid) return;
+    const dx = e.clientX - pts[0][0], dy = e.clientY - pts[0][1];
+    if (!going) {
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+      going = true; gestureActive = true;
+      try { li.setPointerCapture(pid); } catch (err) { /* fine */ }
+    }
+    pts.push([e.clientX, e.clientY]);
+    const flat = []; for (const p of pts) flat.push.apply(flat, norm(p, rect));
+    live.setAttribute('d', seamPath(flat));
+  });
+  const end = e => {
+    if (!pts || e.pointerId !== pid) return;
+    const p = pts, was = going; pts = null; pid = null; going = false; gestureActive = false;
+    if (was) {
+      const xs = p.map(q => q[0]);
+      const span = Math.max.apply(null, xs) - Math.min.apply(null, xs);
+      if (e.type === 'pointerup' && span >= Math.max(80, rect.width * 0.3)) {
+        const step = Math.max(1, Math.ceil(p.length / 24));
+        const keep = p.filter((q, i) => i % step === 0 || i === p.length - 1);
+        const seam = []; for (const q of keep) seam.push.apply(seam, norm(q, rect));
+        pendingRender = false;
+        complete(t.id, seam, keep, false);
+      } else live.setAttribute('d', '');
+    }
+    if (pendingRender) { pendingRender = false; render(); }
+  };
+  li.addEventListener('pointerup', end);
+  li.addEventListener('pointercancel', end);
+}
+$('more').addEventListener('click', () => { showAll = !showAll; render(); });
+
+/* ================= capture: type, write ================= */
+const input = $('taskInput');
+$('capture').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = input.value.trim();
+  if (!v || !mode) return;
+  input.value = ''; addTask({ text: v, src: 'type' });
+});
+
+/* handwriting slip */
+const slip = $('slip'), slipCv = $('slipCanvas'), sctx = slipCv.getContext('2d');
+let slipStrokes = [], slipCur = null, slipRect = null, slipDpr = 1;
+function openSlip() {
+  slip.hidden = false; $('capture').hidden = true; slipStrokes = [];
+  const r = slipCv.getBoundingClientRect(); slipDpr = Math.min(window.devicePixelRatio || 1, 3);
+  slipCv.width = Math.round(r.width * slipDpr); slipCv.height = Math.round(r.height * slipDpr);
+  sctx.setTransform(slipDpr, 0, 0, slipDpr, 0, 0);
+  sctx.lineCap = 'round'; sctx.lineJoin = 'round'; sctx.lineWidth = 2.6; sctx.strokeStyle = INKS[0];
+}
+function closeSlip() { slip.hidden = true; $('capture').hidden = false; slipStrokes = []; slipCur = null; }
+$('writeBtn').addEventListener('click', openSlip);
+$('slipCancel').addEventListener('click', closeSlip);
+slipCv.addEventListener('pointerdown', e => {
+  notePen(e);
+  if (e.pointerType === 'touch' && penSeen) return;
+  e.preventDefault();
+  try { slipCv.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+  slipRect = slipCv.getBoundingClientRect();
+  slipCur = [e.clientX - slipRect.left, e.clientY - slipRect.top];
+});
+slipCv.addEventListener('pointermove', e => {
+  if (!slipCur) return;
+  const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+  for (const ev of evs) {
+    const x = ev.clientX - slipRect.left, y = ev.clientY - slipRect.top, n = slipCur.length;
+    if (Math.hypot(x - slipCur[n - 2], y - slipCur[n - 1]) < 1.5) continue;
+    sctx.beginPath(); sctx.moveTo(slipCur[n - 2], slipCur[n - 1]); sctx.lineTo(x, y); sctx.stroke();
+    slipCur.push(x, y);
+  }
+});
+const slipEnd = () => {
+  if (!slipCur) return;
+  if (slipCur.length === 2) { sctx.beginPath(); sctx.arc(slipCur[0], slipCur[1], 1.3, 0, 7); sctx.fillStyle = INKS[0]; sctx.fill(); }
+  slipStrokes.push(slipCur); slipCur = null;
+};
+slipCv.addEventListener('pointerup', slipEnd);
+slipCv.addEventListener('pointercancel', slipEnd);
+$('slipAdd').addEventListener('click', () => {
+  if (!slipStrokes.length) { status('The slip is empty. Write the task first.'); return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, count = 0;
+  for (const s of slipStrokes) for (let i = 0; i < s.length; i += 2) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); count++; }
+  const step = Math.max(1, Math.ceil(count / 1800));
+  const s = slipStrokes.map(a => {
+    const out = [];
+    for (let i = 0; i < a.length; i += 2 * step) out.push(Math.round((a[i] - x0) * 4), Math.round((a[i + 1] - y0) * 4));
+    return out;
+  });
+  addTask({ ink: { w: Math.max(4, Math.round((x1 - x0) * 4)), h: Math.max(4, Math.round((y1 - y0) * 4)), s }, src: 'pen' });
+  closeSlip();
+});
+
+/* ================= the drawing page ================= */
+const ink = $('ink'), ictx = ink.getContext('2d'), surface = $('surface');
+let pageDay = today, strokes = [], history = [], cur = null;
+let tool = { c: 0, n: 1, erase: false };
+let penSeen = local.get('board.pen', false) === true;
+let cssW = 0, cssH = 0, dpr = 1, inkRect = null, activePid = null, erasing = false, eraseFrom = null;
+let pageUpdated = 0, pageDays = [], syncTimer = 0, downloads = null, dirtySync = false;
+
+function notePen(e) { if (e.pointerType === 'pen' && !penSeen) { penSeen = true; local.set('board.pen', true); } }
+function validStrokes(a) {
+  if (!Array.isArray(a)) return [];
+  return a.filter(s => s && Array.isArray(s.p) && s.p.length >= 3 && s.p.length % 3 === 0 && s.p.every(Number.isFinite))
+    .map(s => ({ c: clamp(s.c | 0, 0, INKS.length - 1), n: clamp(s.n | 0, 0, NIBS.length - 1), p: s.p }));
+}
+function sizeInk() {
+  const r = surface.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return;
+  cssW = r.width; cssH = r.height; dpr = Math.min(window.devicePixelRatio || 1, 3);
+  ink.width = Math.round(cssW * dpr); ink.height = Math.round(cssH * dpr);
+  redraw();
+}
+function segment(ctx, s, i, W) {
+  const p = s.p, a = (i - 1) * 3, b = i * 3, k = W / 10000;
+  ctx.lineWidth = Math.max(0.6, NIBS[s.n] * (W / 800) * (0.35 + 1.15 * (p[a + 2] + p[b + 2]) / 200));
+  ctx.beginPath(); ctx.moveTo(p[a] * k, p[a + 1] * k); ctx.lineTo(p[b] * k, p[b + 1] * k); ctx.stroke();
+}
+function drawStroke(ctx, s, W) {
+  ctx.strokeStyle = ctx.fillStyle = INKS[s.c] || INKS[0]; ctx.lineCap = 'round';
+  const n = s.p.length / 3, k = W / 10000;
+  if (n === 1) { ctx.beginPath(); ctx.arc(s.p[0] * k, s.p[1] * k, Math.max(0.6, NIBS[s.n] * (W / 800) * 0.5), 0, 7); ctx.fill(); return; }
+  for (let i = 1; i < n; i++) segment(ctx, s, i, W);
+}
+function redraw() {
+  ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ictx.clearRect(0, 0, cssW, cssH);
+  for (const s of strokes) drawStroke(ictx, s, cssW);
+  if (cur) drawStroke(ictx, cur, cssW);
+  $('hint').hidden = strokes.length > 0 || !!cur;
+  $('undoBtn').disabled = history.length === 0;
+}
+function addPoint(ev, pen) {
+  const x = ev.clientX - inkRect.left, y = ev.clientY - inkRect.top, p = cur.p, n = p.length;
+  if (n) { const k = cssW / 10000; if (Math.hypot(x - p[n - 3] * k, y - p[n - 2] * k) < 1.2) return; }
+  const pr = pen ? Math.round(clamp(ev.pressure || 0.5, 0.03, 1) * 100) : 50;
+  p.push(Math.round(x / cssW * 10000), Math.round(y / cssW * 10000), pr);
+  if (p.length >= 6) { ictx.strokeStyle = INKS[cur.c]; ictx.lineCap = 'round'; segment(ictx, cur, p.length / 3 - 1, cssW); }
+}
+function eraseAt(ev) {
+  const k = cssW / 10000, x = ev.clientX - inkRect.left, y = ev.clientY - inkRect.top, rad = 14;
+  const kept = strokes.filter(s => { for (let i = 0; i < s.p.length; i += 3) if (Math.hypot(s.p[i] * k - x, s.p[i + 1] * k - y) < rad + NIBS[s.n]) return false; return true; });
+  if (kept.length !== strokes.length) { strokes = kept; redraw(); }
+}
+function pushHistory(prev) { history.push(prev); if (history.length > 60) history.shift(); }
+
+ink.addEventListener('pointerdown', e => {
+  notePen(e);
+  if (e.pointerType === 'touch' && penSeen) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  if (activePid !== null) return;
+  e.preventDefault();
+  try { ink.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+  inkRect = ink.getBoundingClientRect(); activePid = e.pointerId; $('nibRing').hidden = true; $('clearAsk').hidden = true;
+  const penErase = e.pointerType === 'pen' && ((e.buttons & 32) || (e.buttons & 2) || e.button === 5 || e.button === 2);
+  erasing = tool.erase || !!penErase;
+  if (erasing) { eraseFrom = strokes; eraseAt(e); }
+  else { cur = { c: tool.c, n: tool.n, p: [] }; addPoint(e, e.pointerType === 'pen'); $('hint').hidden = true; }
+});
+ink.addEventListener('pointermove', e => {
+  if (activePid === null) {
+    if (e.pointerType === 'pen') {
+      const r = ink.getBoundingClientRect(), ring = $('nibRing'), d = (tool.erase ? 28 : NIBS[tool.n] * (cssW / 800) + 8);
+      ring.hidden = false; ring.style.left = (e.clientX - r.left) + 'px'; ring.style.top = (e.clientY - r.top) + 'px'; ring.style.width = ring.style.height = d + 'px';
+    }
+    return;
+  }
+  if (e.pointerId !== activePid) return;
+  const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+  for (const ev of evs) { if (erasing) eraseAt(ev); else addPoint(ev, e.pointerType === 'pen'); }
+});
+const inkEnd = e => {
+  if (e.pointerId !== activePid) return;
+  activePid = null;
+  if (erasing) {
+    if (eraseFrom !== strokes) { pushHistory(eraseFrom); savePage(); }
+    eraseFrom = null; erasing = false;
+  } else if (cur) {
+    if (cur.p.length) { pushHistory(strokes); strokes = strokes.concat([cur]); }
+    cur = null; savePage();
+  }
+  redraw();
+};
+ink.addEventListener('pointerup', inkEnd);
+ink.addEventListener('pointercancel', inkEnd);
+ink.addEventListener('pointerleave', () => { $('nibRing').hidden = true; });
+ink.addEventListener('contextmenu', e => e.preventDefault());
+
+/* tools */
+INKS.forEach((c, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'tool'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', INK_NAMES[i] + ' ink');
+  const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.setProperty('--c', c); b.append(sw);
+  b.addEventListener('click', () => { tool.c = i; tool.erase = false; paintTools(); });
+  $('inks').append(b);
+});
+NIBS.forEach((w, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'tool'; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', NIB_NAMES[i] + ' nib');
+  const d = document.createElement('span'); d.className = 'nib'; d.style.setProperty('--d', (4 + i * 5) + 'px'); b.append(d);
+  b.addEventListener('click', () => { tool.n = i; tool.erase = false; paintTools(); });
+  $('nibs').append(b);
+});
+function paintTools() {
+  [...$('inks').children].forEach((b, i) => b.setAttribute('aria-checked', String(!tool.erase && i === tool.c)));
+  [...$('nibs').children].forEach((b, i) => b.setAttribute('aria-checked', String(i === tool.n)));
+  $('eraserBtn').setAttribute('aria-pressed', String(tool.erase));
+}
+$('eraserBtn').addEventListener('click', () => { tool.erase = !tool.erase; paintTools(); });
+$('undoBtn').addEventListener('click', () => { if (!history.length) return; strokes = history.pop(); redraw(); savePage(); });
+$('clearBtn').addEventListener('click', () => { if (strokes.length) $('clearAsk').hidden = !$('clearAsk').hidden; });
+$('clearNo').addEventListener('click', () => { $('clearAsk').hidden = true; });
+$('clearYes').addEventListener('click', () => { $('clearAsk').hidden = true; pushHistory(strokes); strokes = []; redraw(); savePage(); });
+$('saveBtn').addEventListener('click', () => {
+  const out = document.createElement('canvas'), W = 2000, H = Math.round(2000 * cssH / cssW), c = out.getContext('2d');
+  out.width = W; out.height = H; c.fillStyle = tok('--card'); c.fillRect(0, 0, W, H);
+  for (const s of strokes) drawStroke(c, s, W);
+  out.toBlob(blob => {
+    if (!blob) { status('The image could not be made.'); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'page-' + pageDay + '.png';
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    status('Page saved as an image.');
+  }, 'image/png');
+});
+
+/* page storage: a copy on this device, the hub as its home */
+function pageBody() { return { s: strokes, updated: pageUpdated }; }
+function savePage() {
+  pageUpdated = Date.now();
+  const day = pageDay, b = pageBody();
+  if (!local.set('board.page.' + day, b)) pageNote('This page could not be kept on this device. It still goes to the hub.');
+  noteDay(day);
+  clearTimeout(syncTimer); dirtySync = true;
+  syncTimer = setTimeout(() => syncPage(day, b), 2500);
+}
+function syncPage(day, b) {
+  dirtySync = false;
+  if (JSON.stringify(b.s).length > 7500000) { pageNote('This page is too full to send to the hub. It stays on this device.'); return; }
+  if (day === pageDay) pageNote('');
+  enqueue({ k: 'page:' + day, m: 'PUT', p: '/api/pages/' + day, b: { strokes: b.s, updated: b.updated } });
+}
+function onStalePage(p) {
+  // Another device saved this page later. Its copy wins; show it when nothing is being drawn here.
+  if (!p || !p.day) return;
+  local.set('board.page.' + p.day, { s: validStrokes(p.strokes), updated: Number(p.updated) || 0 });
+  if (p.day === pageDay && activePid === null && !dirtySync) {
+    strokes = validStrokes(p.strokes); pageUpdated = Number(p.updated) || 0; history = []; redraw();
+    pageNote('A newer copy of this page came from another device.');
+  }
+}
+function pageNote(msg) { $('pageNote').textContent = msg || ''; }
+function noteDay(day) {
+  if (pageDays.includes(day)) return;
+  pageDays.push(day); pageDays.sort(); paintNav();
+}
+function localDays() { return local.keys().filter(k => k.indexOf('board.page.') === 0).map(k => k.slice(11)).filter(k => /^\d{4}-\d\d-\d\d$/.test(k)); }
+function navDays() { return Array.from(new Set(pageDays.concat([today]))).sort(); }
+function paintNav() {
+  const days = navDays(), i = days.indexOf(pageDay);
+  $('prevDay').disabled = i <= 0; $('nextDay').disabled = i < 0 || i >= days.length - 1;
+  $('pageTitle').textContent = pageDay === today ? "Today's page" : longDate(keyDate(pageDay));
+}
+function openPage(day) {
+  clearTimeout(syncTimer);
+  if (dirtySync) syncPage(pageDay, pageBody());
+  pageDay = day; history = []; cur = null; pageNote(''); $('clearAsk').hidden = true;
+  const b = local.get('board.page.' + day, null);
+  strokes = validStrokes(b && b.s); pageUpdated = (b && Number(b.updated)) || 0;
+  redraw(); paintNav();
+  if (mode) fetchPage(day);
+}
+function fetchPage(day) {
+  const seen = pageUpdated;
+  api('GET', '/api/pages/' + day).then(res => {
+    if (res.status !== 200 || !res.json || day !== pageDay || pageUpdated !== seen || activePid !== null || dirtySync) return;
+    const b = res.json;
+    if ((Number(b.updated) || 0) > seen) {
+      strokes = validStrokes(b.strokes); pageUpdated = Number(b.updated) || 0; history = [];
+      local.set('board.page.' + day, pageBody()); redraw();
+    }
+  }).catch(() => {});
+}
+function pollPages() {
+  // The list is small: days and their save times. A page is fetched only when the hub has a newer copy.
+  api('GET', '/api/pages').then(res => {
+    if (res.status !== 200 || !res.json || !Array.isArray(res.json.days)) return;
+    const days = res.json.days.filter(d => d && /^\d{4}-\d\d-\d\d$/.test(d.day));
+    pageDays = Array.from(new Set(pageDays.concat(days.map(d => d.day)))).sort(); paintNav();
+    const mine = days.find(d => d.day === pageDay);
+    if (mine && Number(mine.updated) > pageUpdated && !dirtySync && activePid === null) fetchPage(pageDay);
+  }).catch(() => {});
+}
+$('prevDay').addEventListener('click', () => { const d = navDays(), i = d.indexOf(pageDay); if (i > 0) openPage(d[i - 1]); });
+$('nextDay').addEventListener('click', () => { const d = navDays(), i = d.indexOf(pageDay); if (i >= 0 && i < d.length - 1) openPage(d[i + 1]); });
+
+function onNewDay(was) {
+  if (pageDay === was && activePid === null) openPage(today); else paintNav();
+  showAll = false; render();
+}
+
+/* ================= burn-in care: shift, rest, sleep ================= */
+let lastTouch = Date.now(), sleeping = false, forcedSleep = false;
+function shiftPixels() {
+  if (activePid !== null || gestureActive || slipCur) return;
+  const x = Math.round((Math.random() - 0.5) * 16), y = Math.round((Math.random() - 0.5) * 16);
+  $('stage').style.transform = 'translate(' + x + 'px,' + y + 'px)';
+}
+function setSleep(on) {
+  sleeping = on; $('sleep').hidden = !on;
+  if (on) driftSleep();
+}
+function driftSleep() {
+  const t = $('sleepTime');
+  t.style.left = (8 + Math.random() * 62) + '%'; t.style.top = (10 + Math.random() * 66) + '%';
+}
+function idleCheck() {
+  const idle = Date.now() - lastTouch, h = new Date().getHours();
+  document.body.classList.toggle('rest', idle > 10 * 60e3);
+  if (!sleeping && idle > 20 * 60e3 && h >= 1 && h < 6) setSleep(true);
+  if (sleeping && !forcedSleep && !(h >= 1 && h < 6)) setSleep(false);
+}
+let wakeLock = null;
+function keepAwake() {
+  try {
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    navigator.wakeLock.request('screen').then(w => { wakeLock = w; w.addEventListener('release', () => { wakeLock = null; }); }).catch(() => {});
+  } catch (e) { /* not allowed here */ }
+}
+addEventListener('pointerdown', e => {
+  lastTouch = Date.now(); document.body.classList.remove('rest'); keepAwake();
+  if (sleeping && !e.target.closest('#restBtn')) { forcedSleep = false; setSleep(false); e.preventDefault(); e.stopPropagation(); }
+}, true);
+addEventListener('keydown', () => { lastTouch = Date.now(); document.body.classList.remove('rest'); if (sleeping) { forcedSleep = false; setSleep(false); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); tickClock(); } });
+$('restBtn').addEventListener('click', () => { forcedSleep = true; setSleep(true); });
+$('fullBtn').addEventListener('click', () => {
+  try {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    const p = document.documentElement.requestFullscreen();
+    if (p && p.catch) p.catch(() => status('Full screen is not available in this view.'));
+  } catch (e) { status('Full screen is not available in this view.'); }
+});
+
+/* ================= gate: this device's token ================= */
+function showGate(msg) {
+  mode = null; clearInterval(pollTimer);
+  $('gate').hidden = false; $('gateMsg').textContent = msg || '';
+  setTimeout(() => { try { $('gateToken').focus(); } catch (e) { /* fine */ } }, 50);
+}
+$('gateForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('gateToken').value.trim();
+  if (v.length < 24) { $('gateMsg').textContent = 'That is too short to be a device token.'; return; }
+  $('gateMsg').textContent = 'Checking the token…';
+  const was = token; token = v;
+  api('GET', '/api/health').then(res => {
+    if (res.status !== 200) throw new Error('hub ' + res.status);
+    local.set(TOKEN_KEY, token); $('gateToken').value = ''; $('gate').hidden = true; start();
+  }).catch(err => {
+    token = was;
+    $('gateMsg').textContent = err instanceof Unauthorized ? 'The hub did not accept that token.' : 'The hub is out of reach. Check the connection and try again.';
+  });
+});
+
+/* ================= start ================= */
+let pollTimer = 0;
+function start() {
+  mode = 'hub';
+  const cached = local.get(CACHE_KEY, null);
+  if (Array.isArray(cached) && cached.length) { tasks = cached.map(clean); loaded = true; }
+  setTimeout(() => { if (!loaded) { slow = true; render(); } }, 10000);
+  pageDays = Array.from(new Set(pageDays.concat(localDays()))).sort();
+  openPage(pageDay);
+  render(); flush(); refresh();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, POLL_MS);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+addEventListener('online', () => { flush(); refresh(); });
+
+new ResizeObserver(sizeInk).observe(surface);
+addEventListener('resize', sizeDust);
+paintTools(); tickClock(); render(); paintNav();
+setInterval(tickClock, 5000);
+setInterval(idleCheck, 30000);
+setInterval(shiftPixels, 4 * 60e3);
+setInterval(() => { if (sleeping) driftSleep(); }, 60e3);
+
+if (token) start(); else showGate('');
+if ('serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) { /* fine */ } }
+})();
+</script>
+</body>
+</html>

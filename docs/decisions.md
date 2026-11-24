@@ -3,6 +3,32 @@
 Newest first. Format: date — decision — why.
 
 
+## 2026-11-24 — Task hub and Today board
+
+Owner's spec (24 Nov). He did not read it in detail, so every recommendation in its section 8 was taken.
+- **Hub in this repo (`hub/`), its own Gradle build.** Spring Boot 3.5 + one SQLite file, JdbcTemplate (no JPA:
+  less memory on a 2 GB VPS), one pooled connection (SQLite has one writer). Heap 256 MB, serial GC.
+- **HTTPS through a Cloudflare Tunnel**, not an open port. Oracle images block inbound ports in two places
+  (security list + iptables); the tunnel needs neither and Cloudflare serves the certificate.
+- **Per-device tokens in `HUB_TOKENS`** (`phone=…,tablet=…`), compared as SHA-256 in constant time. Revoke one by
+  removing it and restarting. The board's static files are public; they hold no data.
+- **Backup inside the hub**, 03:30 Riyadh, SQLite online backup (`backup to`, same as `.backup`), keeps 14. No host
+  cron to set up. Restore script runs inside the container. Weekly off-site copy is a pull from Sakhr.
+- **Tasks never become `- [ ]` lines.** New `add_task` tool → hub. The daily note gets a plain "Added task: …"
+  line (decision 4) and a nightly "## Done today" block (decision 5). Pure reminders (`create_reminder`) keep
+  their `⏰` line and alarm as before; a task with a time gets the alarm through the same path, no extra line.
+- **Idempotent ids:** capture id for the capture, `<capture id>-<plan index + 1>` for its items. The plan is
+  saved before sending, so retries and offline queues never duplicate.
+- **Split, then sort (spec 4.2)** for spoken captures of 12+ words: pass 1 `list_items` with exact quotes, pass 2
+  the normal sorter with numbered items and an `item` field on every tool. The app then adds unfiled task items
+  as tasks, other unfiled items and uncovered sentences as Unsorted. Shares and weekly reviews stay one pass.
+  Costs one extra model call per long capture.
+- **Leak suspect fixed without a device test:** quick captures stopped after 2 s of silence even mid-ramble.
+  After 6 s of talking the stop needs a 4 s pause. The six-task test in the PR confirms which stage leaked.
+- **Board:** same look; storage swapped to the hub with an outbox in localStorage (offline changes wait and go
+  out in order), 15 s polling while visible, token via first-run screen or a one-time `#t=` link.
+  Speak button and the artifact download capability removed; page download is a normal link.
+
 ## 2026-11-16 — Public release for the workshop
 - **The full feature stack (#4–#7, #13) goes to main in one PR.** Attendees fork main, so main must hold the real app. Owner approved.
 - **One rolling GitHub Release, fixed asset name `yapper.apk`.** Link `releases/latest/download/yapper.apk` never changes. It is a normal (not pre-) release, because `/releases/latest` skips pre-releases. `workflow_dispatch` with *publish* lets a fork publish its own link.

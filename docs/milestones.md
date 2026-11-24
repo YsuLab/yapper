@@ -61,3 +61,12 @@ re-sorting captures made before M2.
   long-press shortcuts.
 - **M5 Today plan:** morning/evening nudge notifications; plan mode → `plan_day` time blocks + alarms; debrief
   mode → `complete_task` ticks, unfinished items rolled to tomorrow.
+
+## Task hub + Today board (2026-11-24, one PR)
+Spec: the owner's message of 24 Nov. The spec's own M1–M5 in one PR:
+- **M1 Hub** `hub/`: API, tokens, tests, container, Cloudflare Tunnel. Guide: `hub/README.md`.
+- **M2 Board** served by the hub at `board.yasiraloufi.dev`, installable, Unsorted strip, 15 s polling.
+- **M3 Yapper sends tasks** (`add_task` → `hub.json` → `HubWorker`, offline queue, Undo removes them).
+- **M4 Sorter split-then-sort** + coverage check; longer pause allowed in long quick captures.
+- **M5 Backup** nightly inside the hub, restore script, weekly pull to Sakhr.
+Judged after one week: struck a task on the board on 4+ days = keep.
